@@ -2,164 +2,285 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Manajemen Keuangan</title>
-<link rel="icon" type="image/png" href="favicon.png">
-<link rel="apple-touch-icon" href="favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>KeuanganKu</title>
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
-<!-- ================= LOGIN ================= -->
-<div id="auth-page" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg)">
-  <div class="card" style="width:100%;max-width:400px;text-align:center">
-    <div class="brand" style="justify-content:center;border:none;padding-bottom:10px"><div class="logo" style="margin:0 auto 10px">💰</div></div>
-    <h2 style="margin-bottom:20px">Manajemen Keuangan</h2>
-    <input type="email" id="auth-email" placeholder="Email" style="margin-bottom:10px">
-    <input type="password" id="auth-password" placeholder="Password" style="margin-bottom:10px">
-    <div id="auth-error" class="error-msg" style="margin-bottom:10px"></div>
-    <button id="btn-login" class="btn btn-primary" style="width:100%;margin-bottom:10px">Login</button>
-    <button id="btn-register" class="btn btn-ghost" style="width:100%">Daftar Akun Baru</button>
-    <p style="font-size:12px;color:var(--muted);margin-top:15px">Hanya untuk 2 pengguna terdaftar.</p>
+<!-- ============ HALAMAN LOGIN ============ -->
+<div id="auth-page" class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="logo">💰</div>
+      <h1>KeuanganKu</h1>
+      <p>SMART MONEY MANAGER</p>
+    </div>
+    <input type="email" id="auth-email" placeholder="Email">
+    <input type="password" id="auth-password" placeholder="Password">
+    <div id="auth-error" class="error-msg"></div>
+    <button id="btn-login" class="btn btn-primary btn-block">Masuk</button>
+    <button id="btn-register" class="btn btn-ghost btn-block">Daftar Akun Baru</button>
+    <p class="auth-note">Hanya untuk 2 pengguna terdaftar.</p>
   </div>
 </div>
 
-<!-- ================= APP ================= -->
+<!-- ============ APP ============ -->
 <div class="layout" id="app-layout" style="display:none">
-  <aside class="sidebar">
-    <div class="brand"><div class="logo">💰</div><div><h1>Keuangan Atta Family</h1><small>Manajemen Keuangan</small></div></div>
+
+  <!-- Sidebar Overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="logo">💰</div>
+      <div><h1>KeuanganKu</h1><small>Smart Money Manager</small></div>
+    </div>
     <nav id="nav">
+      <div class="nav-section">TRACKER</div>
       <button data-page="dashboard" class="active"><span class="ico">📊</span> Dashboard</button>
-      <button data-page="pemasukan"><span class="ico">📥</span> Pemasukan</button>
-      <button data-page="pengeluaran"><span class="ico">📤</span> Pengeluaran</button>
+      <button data-page="detail"><span class="ico">📋</span> Detail Transaksi</button>
+      <div class="nav-section">SETUP</div>
+      <button data-page="pemasukan"><span class="ico">📥</span> Input Pemasukan</button>
+      <button data-page="pengeluaran"><span class="ico">📤</span> Input Pengeluaran</button>
       <button data-page="kategori"><span class="ico">🏷️</span> Kategori</button>
-      <button data-page="laporan"><span class="ico">📑</span> Laporan &amp; Export</button>
-      <button id="btn-logout" style="margin-top:20px;color:#D1B89A"><span class="ico">🚪</span> Logout</button>
+      <div class="nav-section">REPORT</div>
+      <button data-page="laporan"><span class="ico">📑</span> Laporan & Export</button>
     </nav>
+    <button id="btn-logout" class="btn-logout">
+      <span>🚪</span> Logout
+    </button>
   </aside>
 
-  <!-- TOPBAR -->
-  <div class="topbar">
+  <!-- Topbar -->
+  <header class="topbar">
+    <button class="hamburger" id="hamburger">☰</button>
     <h1 class="topbar-title" id="topbar-title">Dashboard</h1>
     <button class="btn-new-entry" id="btn-new-entry">
-      <span class="plus">+</span> Entri Baru
+      <span>+</span> Entri Baru
     </button>
-  </div>
+  </header>
 
+  <!-- Main Content -->
   <main class="main">
+
+    <!-- ========== DASHBOARD ========== -->
     <section class="page active" id="page-dashboard">
-      <div class="page-header"><h2>Dashboard</h2><p>Ringkasan perputaran keuangan Anda</p></div>
-      <div class="stat-grid">
-        <div class="stat income"><div class="label">Total Pemasukan</div><div class="value" id="statPemasukan">Rp 0</div><div class="sub" id="statPemasukanSub">0 transaksi</div></div>
-        <div class="stat expense"><div class="label">Total Pengeluaran</div><div class="value" id="statPengeluaran">Rp 0</div><div class="sub" id="statPengeluaranSub">0 transaksi</div></div>
-        <div class="stat balance"><div class="label">Saldo</div><div class="value" id="statSaldo">Rp 0</div><div class="sub" id="statSaldoSub">Pemasukan − Pengeluaran</div></div>
-        <div class="stat count"><div class="label">Total Transaksi</div><div class="value" id="statTotal">0</div><div class="sub">Seluruh catatan</div></div>
+      <!-- Alert offline (dismissible) -->
+      <div class="alert-card" id="alert-offline">
+        <button class="alert-close" onclick="this.parentElement.style.display='none'">✕</button>
+        <strong>👋 Selamat datang di KeuanganKu</strong>
+        <p>Catat pemasukan & pengeluaranmu biar keuangan lebih terkontrol.</p>
       </div>
-      <div class="chart-grid"><div class="card"><h3>📈 Arus Kas Bulanan</h3><div class="chart-box"><canvas id="chartBulanan"></canvas></div></div></div>
-      <div class="chart-grid two">
-        <div class="card"><h3>🥧 Pengeluaran per Kategori</h3><div class="chart-box sm"><canvas id="chartKatKeluar"></canvas></div></div>
-        <div class="card"><h3>🥧 Pemasukan per Kategori</h3><div class="chart-box sm"><canvas id="chartKatMasuk"></canvas></div></div>
-      </div>
-      <div class="card" style="margin-top:18px"><h3>🕒 Transaksi Terbaru</h3><div class="table-wrap" id="recentTable"></div></div>
-    </section>
 
-    <section class="page" id="page-pemasukan">
-      <div class="page-header"><h2>Input Pemasukan</h2><p>Semua field wajib diisi kecuali Deskripsi</p></div>
-      <div class="card">
-        <h3>➕ Tambah Pemasukan</h3>
-        <form id="formPemasukan" novalidate>
-          <div class="form-grid">
-            <div class="field"><label>Tanggal <span class="req">*</span></label><input type="date" id="inTanggal"><div class="error-msg" id="err-inTanggal"></div></div>
-            <div class="field"><label>Sumber <span class="req">*</span></label><input type="text" id="inKegunaan" placeholder="cth: Gaji" maxlength="80"><div class="error-msg" id="err-inKegunaan"></div></div>
-            <div class="field"><label>Kategori <span class="req">*</span></label><select id="inKategori"></select><div class="error-msg" id="err-inKategori"></div></div>
-            <div class="field"><label>Jumlah (Rp) <span class="req">*</span></label><input type="number" id="inJumlah" placeholder="cth: 5000000" min="1" step="any"><div class="error-msg" id="err-inJumlah"></div></div>
-            <div class="field full"><label>Deskripsi (opsional)</label><textarea id="inDeskripsi" placeholder="Catatan tambahan..." maxlength="250"></textarea></div>
-          </div>
-          <div class="form-actions"><button type="submit" class="btn btn-success">💾 Simpan Pemasukan</button><button type="reset" class="btn btn-ghost">↺ Bersihkan</button></div>
-        </form>
+      <!-- Filter chips -->
+      <div class="filter-row">
+        <button class="chip" id="chip-periode" data-periode="bulan-ini">📅 Bulan Ini</button>
+        <button class="chip" id="chip-tahun" data-periode="tahun-ini">Tahun Ini</button>
+        <button class="chip" id="chip-semua" data-periode="semua">Semua</button>
       </div>
-      <div class="card" style="margin-top:18px"><h3>📋 Riwayat Pemasukan <span class="badge" id="countPemasukan">0</span></h3><div class="table-wrap" id="tablePemasukan"></div></div>
-    </section>
 
-    <section class="page" id="page-pengeluaran">
-      <div class="page-header"><h2>Input Pengeluaran</h2><p>Semua field wajib diisi kecuali Deskripsi</p></div>
-      <div class="card">
-        <h3>➕ Tambah Pengeluaran</h3>
-        <form id="formPengeluaran" novalidate>
-          <div class="form-grid">
-            <div class="field"><label>Tanggal <span class="req">*</span></label><input type="date" id="outTanggal"><div class="error-msg" id="err-outTanggal"></div></div>
-            <div class="field"><label>Kegunaan <span class="req">*</span></label><input type="text" id="outSumber" placeholder="cth: Toko Sembako" maxlength="80"><div class="error-msg" id="err-outSumber"></div></div>
-            <div class="field"><label>Kategori <span class="req">*</span></label><select id="outKategori"></select><div class="error-msg" id="err-outKategori"></div></div>
-            <div class="field"><label>Jumlah (Rp) <span class="req">*</span></label><input type="number" id="outJumlah" placeholder="cth: 150000" min="1" step="any"><div class="error-msg" id="err-outJumlah"></div></div>
-            <div class="field full"><label>Deskripsi (opsional)</label><textarea id="outDeskripsi" placeholder="Catatan tambahan..." maxlength="250"></textarea></div>
-          </div>
-          <div class="form-actions"><button type="submit" class="btn btn-primary">💾 Simpan Pengeluaran</button><button type="reset" class="btn btn-ghost">↺ Bersihkan</button></div>
-        </form>
-      </div>
-      <div class="card" style="margin-top:18px"><h3>📋 Riwayat Pengeluaran <span class="badge" id="countPengeluaran">0</span></h3><div class="table-wrap" id="tablePengeluaran"></div></div>
-    </section>
-
-    <section class="page" id="page-kategori">
-      <div class="page-header"><h2>Manajemen Kategori</h2><p>Kelola kategori untuk pemasukan dan pengeluaran</p></div>
-      <div class="kat-layout">
-        <div class="card"><h3>📥 Kategori Pemasukan</h3><form class="kat-form" id="formKatMasuk"><input type="text" id="inputKatMasuk" placeholder="Nama kategori baru..." maxlength="40"><button type="submit" class="btn btn-success btn-sm">Tambah</button></form><div class="kat-list" id="listKatMasuk"></div></div>
-        <div class="card"><h3>📤 Kategori Pengeluaran</h3><form class="kat-form" id="formKatKeluar"><input type="text" id="inputKatKeluar" placeholder="Nama kategori baru..." maxlength="40"><button type="submit" class="btn btn-primary btn-sm">Tambah</button></form><div class="kat-list" id="listKatKeluar"></div></div>
-      </div>
-    </section>
-
-    <section class="page" id="page-laporan">
-      <div class="page-header"><h2>Laporan &amp; Export</h2><p>Filter data lalu export ke Excel (.xlsx)</p></div>
-      <div class="card">
-        <h3>⚙️ Filter Laporan</h3>
-        <div class="form-grid">
-          <div class="field"><label>Jenis Transaksi</label><select id="expJenis"><option value="semua">Semua Transaksi</option><option value="pemasukan">Pemasukan saja</option><option value="pengeluaran">Pengeluaran saja</option></select></div>
-          <div class="field"><label>Dari Tanggal</label><input type="date" id="expDari"></div>
-          <div class="field"><label>Sampai Tanggal</label><input type="date" id="expSampai"></div>
+      <!-- 3 Stat Cards -->
+      <div class="stat-cards">
+        <div class="stat-card balance">
+          <div class="stat-icon">💼</div>
+          <div class="stat-label">Saldo</div>
+          <div class="stat-value" id="statSaldo">Rp 0</div>
+          <div class="stat-sub" id="statSaldoSub">—</div>
         </div>
-        <div class="form-actions"><button class="btn btn-ghost" id="btnPreview">🔍 Tampilkan Preview</button><button class="btn btn-primary" id="btnExport">📊 Export ke Excel</button></div>
+        <div class="stat-card income">
+          <div class="stat-icon">📈</div>
+          <div class="stat-label">Masuk</div>
+          <div class="stat-value" id="statPemasukan">Rp 0</div>
+          <div class="stat-sub" id="statPemasukanSub">0 trx</div>
+        </div>
+        <div class="stat-card expense">
+          <div class="stat-icon">📉</div>
+          <div class="stat-label">Keluar</div>
+          <div class="stat-value" id="statPengeluaran">Rp 0</div>
+          <div class="stat-sub" id="statPengeluaranSub">0 trx</div>
+        </div>
       </div>
-      <div class="card" style="margin-top:18px"><h3>👁️ Preview Laporan <span class="badge" id="countPreview">0</span></h3><div class="table-wrap" id="tablePreview"></div></div>
+
+      <!-- Chart Card -->
+      <div class="card">
+        <div class="card-head">
+          <h3>Pemasukan vs Pengeluaran</h3>
+        </div>
+        <div class="chart-box"><canvas id="chartBulanan"></canvas></div>
+      </div>
+
+      <!-- Kategori Chart -->
+      <div class="card">
+        <div class="card-head"><h3>Pengeluaran per Kategori</h3></div>
+        <div class="chart-box sm"><canvas id="chartKatKeluar"></canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>Pemasukan per Kategori</h3></div>
+        <div class="chart-box sm"><canvas id="chartKatMasuk"></canvas></div>
+      </div>
+
+      <!-- Recent -->
+      <div class="card">
+        <div class="card-head">
+          <h3>Transaksi Terbaru</h3>
+          <a href="#" class="link-more" id="link-ke-detail">Lihat semua →</a>
+        </div>
+        <div id="recentTable"></div>
+      </div>
     </section>
+
+    <!-- ========== DETAIL TRANSAKSI (BARU) ========== -->
+    <section class="page" id="page-detail">
+      <div class="filter-row">
+        <button class="chip" id="detail-filter-semua" data-dfilter="semua">Semua</button>
+        <button class="chip" id="detail-filter-masuk" data-dfilter="masuk">Masuk</button>
+        <button class="chip" id="detail-filter-keluar" data-dfilter="keluar">Keluar</button>
+      </div>
+      <div class="search-box">
+        <span class="search-ico">🔍</span>
+        <input type="text" id="detail-search" placeholder="Cari keterangan / kategori...">
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <h3>Detail Transaksi <span class="badge" id="countDetail">0</span></h3>
+        </div>
+        <div id="detailList"></div>
+      </div>
+    </section>
+
+    <!-- ========== PEMASUKAN ========== -->
+    <section class="page" id="page-pemasukan">
+      <div class="card">
+        <div class="card-head"><h3>➕ Tambah Pemasukan</h3></div>
+        <form id="formPemasukan" novalidate>
+          <div class="field"><label>Tanggal <span class="req">*</span></label><input type="date" id="inTanggal"><div class="error-msg" id="err-inTanggal"></div></div>
+          <div class="field"><label>Sumber <span class="req">*</span></label><input type="text" id="inKegunaan" placeholder="cth: PT ABC / Klien" maxlength="80"><div class="error-msg" id="err-inKegunaan"></div></div>
+          <div class="field"><label>Kategori <span class="req">*</span></label><select id="inKategori"></select><div class="error-msg" id="err-inKategori"></div></div>
+          <div class="field"><label>Jumlah (Rp) <span class="req">*</span></label><input type="number" id="inJumlah" placeholder="cth: 5000000" min="1" step="any"><div class="error-msg" id="err-inJumlah"></div></div>
+          <div class="field"><label>Deskripsi (opsional)</label><textarea id="inDeskripsi" placeholder="Catatan tambahan..." maxlength="250"></textarea></div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-success btn-block">💾 Simpan Pemasukan</button>
+          </div>
+        </form>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Riwayat Pemasukan <span class="badge" id="countPemasukan">0</span></h3></div>
+        <div id="tablePemasukan"></div>
+      </div>
+    </section>
+
+    <!-- ========== PENGELUARAN ========== -->
+    <section class="page" id="page-pengeluaran">
+      <div class="card">
+        <div class="card-head"><h3>➕ Tambah Pengeluaran</h3></div>
+        <form id="formPengeluaran" novalidate>
+          <div class="field"><label>Tanggal <span class="req">*</span></label><input type="date" id="outTanggal"><div class="error-msg" id="err-outTanggal"></div></div>
+          <div class="field"><label>Kegunaan <span class="req">*</span></label><input type="text" id="outSumber" placeholder="cth: Beli Sembako" maxlength="80"><div class="error-msg" id="err-outSumber"></div></div>
+          <div class="field"><label>Kategori <span class="req">*</span></label><select id="outKategori"></select><div class="error-msg" id="err-outKategori"></div></div>
+          <div class="field"><label>Jumlah (Rp) <span class="req">*</span></label><input type="number" id="outJumlah" placeholder="cth: 150000" min="1" step="any"><div class="error-msg" id="err-outJumlah"></div></div>
+          <div class="field"><label>Deskripsi (opsional)</label><textarea id="outDeskripsi" placeholder="Catatan tambahan..." maxlength="250"></textarea></div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-block">💾 Simpan Pengeluaran</button>
+          </div>
+        </form>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Riwayat Pengeluaran <span class="badge" id="countPengeluaran">0</span></h3></div>
+        <div id="tablePengeluaran"></div>
+      </div>
+    </section>
+
+    <!-- ========== KATEGORI ========== -->
+    <section class="page" id="page-kategori">
+      <div class="card">
+        <div class="card-head"><h3>📥 Kategori Pemasukan</h3></div>
+        <form class="kat-form" id="formKatMasuk">
+          <input type="text" id="inputKatMasuk" placeholder="Nama kategori baru..." maxlength="40">
+          <button type="submit" class="btn btn-success btn-sm">Tambah</button>
+        </form>
+        <div class="kat-list" id="listKatMasuk"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>📤 Kategori Pengeluaran</h3></div>
+        <form class="kat-form" id="formKatKeluar">
+          <input type="text" id="inputKatKeluar" placeholder="Nama kategori baru..." maxlength="40">
+          <button type="submit" class="btn btn-primary btn-sm">Tambah</button>
+        </form>
+        <div class="kat-list" id="listKatKeluar"></div>
+      </div>
+    </section>
+
+    <!-- ========== LAPORAN ========== -->
+    <section class="page" id="page-laporan">
+      <div class="card">
+        <div class="card-head"><h3>⚙️ Filter Laporan</h3></div>
+        <div class="field"><label>Jenis Transaksi</label><select id="expJenis"><option value="semua">Semua Transaksi</option><option value="pemasukan">Pemasukan saja</option><option value="pengeluaran">Pengeluaran saja</option></select></div>
+        <div class="field"><label>Dari Tanggal</label><input type="date" id="expDari"></div>
+        <div class="field"><label>Sampai Tanggal</label><input type="date" id="expSampai"></div>
+        <div class="form-actions" style="flex-direction:column">
+          <button class="btn btn-ghost btn-block" id="btnPreview">🔍 Tampilkan Preview</button>
+          <button class="btn btn-primary btn-block" id="btnExport">📊 Export ke Excel</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Preview <span class="badge" id="countPreview">0</span></h3></div>
+        <div id="tablePreview"></div>
+      </div>
+    </section>
+
   </main>
+
+  <!-- Bottom Navigation (Mobile) -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <button data-page="dashboard" class="active">
+      <span class="bn-ico">▦</span>
+      <span class="bn-label">Dashboard</span>
+    </button>
+    <button data-page="pemasukan">
+      <span class="bn-ico">📥</span>
+      <span class="bn-label">Masuk</span>
+    </button>
+    <button class="fab" id="fab-entry">
+      <span>+</span>
+    </button>
+    <button data-page="pengeluaran">
+      <span class="bn-ico">📤</span>
+      <span class="bn-label">Keluar</span>
+    </button>
+    <button data-page="laporan">
+      <span class="bn-ico">📊</span>
+      <span class="bn-label">Laporan</span>
+    </button>
+  </nav>
 </div>
 
-<!-- ================= MODAL ENTRY BARU ================= -->
+<!-- ============ MODAL ENTRY BARU ============ -->
 <div class="modal-overlay" id="modal-entry" style="display:none">
   <div class="modal">
     <div class="modal-header">
       <h2>Entry Data</h2>
       <button class="modal-close" id="modal-close">✕</button>
     </div>
-
     <div class="modal-tabs" id="modal-tabs">
       <button data-tab="expense" class="active">Pengeluaran</button>
       <button data-tab="income">Pemasukan</button>
     </div>
-
     <div class="kategori-header">
       <label>KATEGORI</label>
-      <a href="#" class="link-kategori" id="link-atur-kategori">Atur kategori →</a>
+      <a href="#" class="link-kategori" id="link-atur-kategori">Atur →</a>
     </div>
-    <input type="text" class="search-kategori" id="search-kategori" placeholder="Cari kategori atau kata kunci...">
+    <input type="text" class="search-kategori" id="search-kategori" placeholder="Cari kategori...">
     <div class="kategori-grid" id="kategori-grid"></div>
-
     <div class="entry-fields">
-      <div class="field">
-        <label>Tanggal <span class="req">*</span></label>
-        <input type="date" id="entry-tanggal">
-      </div>
-      <div class="field">
-        <label id="entry-label-kegunaan">Sumber <span class="req">*</span></label>
-        <input type="text" id="entry-kegunaan" placeholder="cth: Toko Sembako" maxlength="80">
-      </div>
-      <div class="field">
-        <label>Deskripsi (opsional)</label>
-        <input type="text" id="entry-deskripsi" placeholder="Catatan tambahan..." maxlength="120">
-      </div>
+      <div class="field"><label>Tanggal <span class="req">*</span></label><input type="date" id="entry-tanggal"></div>
+      <div class="field"><label id="entry-label-kegunaan">Kegunaan <span class="req">*</span></label><input type="text" id="entry-kegunaan" placeholder="cth: Beli Sembako" maxlength="80"></div>
+      <div class="field"><label>Deskripsi</label><input type="text" id="entry-deskripsi" placeholder="Opsional..." maxlength="120"></div>
     </div>
-
     <div class="amount-display">
       <div class="amount-label">JUMLAH</div>
       <div class="amount-value">
@@ -167,26 +288,12 @@
         <span class="amount-number" id="amount-number">0</span>
       </div>
     </div>
-
     <div class="numpad">
-      <button data-key="7">7</button>
-      <button data-key="8">8</button>
-      <button data-key="9">9</button>
-      <button data-key="÷" class="op">÷</button>
-      <button data-key="4">4</button>
-      <button data-key="5">5</button>
-      <button data-key="6">6</button>
-      <button data-key="×" class="op">×</button>
-      <button data-key="1">1</button>
-      <button data-key="2">2</button>
-      <button data-key="3">3</button>
-      <button data-key="−" class="op">−</button>
-      <button data-key="00">00</button>
-      <button data-key="0">0</button>
-      <button data-key="⌫" class="op">⌫</button>
-      <button data-key="+" class="op">+</button>
+      <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button><button data-key="÷" class="op">÷</button>
+      <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button><button data-key="×" class="op">×</button>
+      <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button><button data-key="−" class="op">−</button>
+      <button data-key="00">00</button><button data-key="0">0</button><button data-key="⌫" class="op">⌫</button><button data-key="+" class="op">+</button>
     </div>
-
     <button class="btn-save-entry" id="btn-save-entry">Simpan</button>
   </div>
 </div>
