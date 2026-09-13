@@ -458,7 +458,6 @@ document.getElementById('btn-save-entry').addEventListener('click', async ()=>{
 
 // Modal trigger
 document.getElementById('btn-new-entry').addEventListener('click',()=>openModal('expense'));
-document.getElementById('fab-entry').addEventListener('click',()=>openModal('expense'));
 document.getElementById('modal-close').addEventListener('click',closeModal);
 modal.addEventListener('click',e=>{ if(e.target===modal) closeModal(); });
 document.getElementById('link-atur-kategori').addEventListener('click',e=>{ e.preventDefault(); closeModal(); goToPage('kategori'); });
