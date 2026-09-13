@@ -1,4 +1,22 @@
-:root{--bg:#f4f6fb;--card:#fff;--primary:#4f46e5;--primary-dark:#4338ca;--green:#10b981;--red:#ef4444;--amber:#f59e0b;--text:#1f2937;--muted:#6b7280;--border:#e5e7eb;--radius:14px;--shadow:0 4px 16px rgba(17,24,39,.06);--tan:#f9f1e3;--tan-dark:#f0e5d0;--orange:#d97706;--green-primary:#16a34a}
+:root{
+  /* Palet Warna Mocha / Brown */
+  --bg:#FAF7F0;            /* Soft Ivory - background utama */
+  --card:#FFFFFF;          /* Card tetap putih agar konten jelas */
+  --primary:#3B2A20;       /* Dark Chocolate - warna utama */
+  --primary-dark:#2A1E16;  /* Darker Mocha - hover state */
+  --green:#10b981;         /* Tetap hijau untuk pemasukan */
+  --red:#ef4444;           /* Tetap merah untuk pengeluaran */
+  --amber:#A67C52;         /* Caramel - aksen */
+  --text:#3B2A20;          /* Dark Chocolate - warna teks */
+  --muted:#7B5E4A;         /* Walnut Brown - teks sekunder */
+  --border:#D1B89A;        /* Warm Beige - border */
+  --radius:14px;
+  --shadow:0 4px 16px rgba(59,42,32,.08);
+  --tan:#F2E7D5;           /* Vanilla Cream - background input/modal */
+  --tan-dark:#D1B89A;      /* Warm Beige - hover state */
+  --orange:#A67C52;        /* Caramel - warna angka */
+  --green-primary:#16a34a; /* Tetap hijau untuk tombol tambah */
+}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
 .layout{display:flex;min-height:100vh;align-items:flex-start}
