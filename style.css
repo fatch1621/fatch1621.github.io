@@ -45,13 +45,13 @@ body{font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;background
 .brand .logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#7B5E4A,#A67C52);display:grid;place-items:center;font-size:20px;flex-shrink:0}
 .brand h1{font-size:16px;font-weight:800;line-height:1.1}
 .brand small{font-size:10.5px;color:#D1B89A;font-weight:400;letter-spacing:.5px}
-nav{flex:1;padding:14px 10px}
+nav{flex:1;padding:14px 10px;overflow-y:auto}
 .nav-section{font-size:10.5px;font-weight:700;color:#7B5E4A;letter-spacing:1.5px;padding:14px 14px 6px}
 nav button{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;background:transparent;border:none;color:#D1B89A;font-size:14px;font-weight:500;border-radius:10px;cursor:pointer;text-align:left;font-family:inherit;transition:.15s;margin-bottom:2px}
 nav button:hover{background:rgba(255,255,255,.08);color:#fff}
 nav button.active{background:linear-gradient(135deg,#7B5E4A,#A67C52);color:#fff;font-weight:600}
 nav button .ico{font-size:17px;width:22px;text-align:center}
-.btn-logout{margin:14px;padding:12px;background:rgba(220,38,38,.15);color:#fca5a5;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-logout{margin:14px;margin-top:auto;padding:12px;background:rgba(220,38,38,.15);color:#fca5a5;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;flex-shrink:0}
 .btn-logout:hover{background:rgba(220,38,38,.25)}
 
 /* ===== TOPBAR ===== */
@@ -170,15 +170,12 @@ tbody td{padding:10px;border-bottom:1px solid #f1f5f9;vertical-align:top}
 .num.out{color:var(--red)}
 
 /* ===== BOTTOM NAV ===== */
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:68px;background:#fff;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;z-index:45;box-shadow:0 -4px 16px rgba(0,0,0,.05);padding-bottom:env(safe-area-inset-bottom)}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:64px;background:#fff;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;z-index:45;box-shadow:0 -4px 16px rgba(0,0,0,.05);padding-bottom:env(safe-area-inset-bottom)}
 .bottom-nav button{flex:1;height:100%;background:transparent;border:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--muted);cursor:pointer;font-family:inherit;padding:6px 2px;position:relative}
 .bottom-nav button.active{color:var(--green)}
 .bottom-nav button.active .bn-ico{transform:scale(1.1)}
 .bn-ico{font-size:20px;line-height:1;transition:.15s}
 .bn-label{font-size:10.5px;font-weight:600;letter-spacing:.2px}
-.bottom-nav .fab{flex:0 0 60px;height:60px;background:linear-gradient(135deg,#16a34a,#15803d);border-radius:50%;position:absolute;top:-24px;left:50%;transform:translateX(-50%);box-shadow:0 0 0 5px #FAF7F0, 0 6px 16px rgba(22,163,74,.4);color:#fff;font-size:28px;font-weight:300;line-height:1;padding:0;z-index:46}
-.bottom-nav .fab:hover{transform:translateX(-50%) scale(1.05)}
-.bottom-nav .fab span{transform:translateY(-1px)}
 
 /* ===== MODAL ===== */
 .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:flex-end;justify-content:center;z-index:1000;animation:fadeIn .2s;padding:0}
