@@ -99,22 +99,113 @@ document.getElementById('bottom-nav').addEventListener('click', e=>{
 document.getElementById('link-ke-detail').addEventListener('click', e=>{ e.preventDefault(); goToPage('detail'); });
 
 // ====== AUTH ======
-document.getElementById('btn-login').addEventListener('click',async()=>{
-  const email=document.getElementById('auth-email').value;
-  const pass=document.getElementById('auth-password').value;
-  const errBox=document.getElementById('auth-error'); errBox.classList.remove('show'); errBox.textContent='';
-  try{ await signInWithEmailAndPassword(auth,email,pass); }
-  catch(e){ errBox.textContent="Login gagal: "+e.message; errBox.classList.add('show'); }
+let authMode = 'login'; // 'login' atau 'register'
+
+async function handleAuth(){
+  const email = document.getElementById('auth-email').value.trim();
+  const pass = document.getElementById('auth-password').value;
+  const errBox = document.getElementById('auth-error');
+  const btn = document.getElementById('btn-login');
+  const emailInput = document.getElementById('auth-email');
+  const passInput = document.getElementById('auth-password');
+  
+  errBox.classList.remove('show');
+  errBox.textContent = '';
+  emailInput.classList.remove('invalid');
+  passInput.classList.remove('invalid');
+
+  if(!email){
+    errBox.textContent = 'Email wajib diisi.';
+    errBox.classList.add('show');
+    emailInput.classList.add('invalid');
+    emailInput.focus();
+    return;
+  }
+  if(!pass){
+    errBox.textContent = 'Password wajib diisi.';
+    errBox.classList.add('show');
+    passInput.classList.add('invalid');
+    passInput.focus();
+    return;
+  }
+  if(authMode === 'register' && pass.length < 6){
+    errBox.textContent = 'Password minimal 6 karakter.';
+    errBox.classList.add('show');
+    passInput.classList.add('invalid');
+    passInput.focus();
+    return;
+  }
+
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = 'Memproses...';
+
+  try{
+    if(authMode === 'login'){
+      await signInWithEmailAndPassword(auth, email, pass);
+    } else {
+      await createUserWithEmailAndPassword(auth, email, pass);
+      toast('Akun berhasil dibuat!', 'success');
+    }
+  } catch(e){
+    let msg = e.message;
+    if(['auth/invalid-credential','auth/wrong-password','auth/user-not-found','auth/invalid-login-credentials'].includes(e.code)){
+      msg = 'Email atau password salah.';
+    } else if(e.code === 'auth/email-already-in-use'){
+      msg = 'Email sudah terdaftar. Silakan login.';
+    } else if(e.code === 'auth/invalid-email'){
+      msg = 'Format email tidak valid.';
+    } else if(e.code === 'auth/weak-password'){
+      msg = 'Password terlalu lemah (minimal 6 karakter).';
+    } else if(e.code === 'auth/too-many-requests'){
+      msg = 'Terlalu banyak percobaan. Coba lagi nanti.';
+    } else if(e.code === 'auth/network-request-failed'){
+      msg = 'Koneksi internet bermasalah.';
+    }
+    errBox.textContent = msg;
+    errBox.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+document.getElementById('btn-login').addEventListener('click', handleAuth);
+document.getElementById('auth-password').addEventListener('keydown', e => {
+  if(e.key === 'Enter') handleAuth();
 });
-document.getElementById('btn-register').addEventListener('click',async()=>{
-  const email=document.getElementById('auth-email').value;
-  const pass=document.getElementById('auth-password').value;
-  const errBox=document.getElementById('auth-error'); errBox.classList.remove('show'); errBox.textContent='';
-  if(pass.length<6){ errBox.textContent="Password minimal 6 karakter."; errBox.classList.add('show'); return; }
-  try{ await createUserWithEmailAndPassword(auth,email,pass); toast('Akun dibuat! Silakan login.','success'); }
-  catch(e){ errBox.textContent="Registrasi gagal: "+e.message; errBox.classList.add('show'); }
+document.getElementById('auth-email').addEventListener('keydown', e => {
+  if(e.key === 'Enter') document.getElementById('auth-password').focus();
 });
-document.getElementById('btn-logout').addEventListener('click',()=>{ closeSidebar(); signOut(auth); });
+
+// Clear error saat user mengetik
+document.getElementById('auth-email').addEventListener('input', () => {
+  document.getElementById('auth-error').classList.remove('show');
+  document.getElementById('auth-email').classList.remove('invalid');
+});
+document.getElementById('auth-password').addEventListener('input', () => {
+  document.getElementById('auth-error').classList.remove('show');
+  document.getElementById('auth-password').classList.remove('invalid');
+});
+
+// Toggle Login / Register
+document.getElementById('btn-register').addEventListener('click', e => {
+  e.preventDefault();
+  authMode = authMode === 'login' ? 'register' : 'login';
+  const btn = document.getElementById('btn-login');
+  const toggle = document.getElementById('toggle-label');
+  const note = document.getElementById('auth-note');
+  if(authMode === 'register'){
+    btn.textContent = 'Daftar Akun';
+    toggle.innerHTML = 'Sudah punya akun? <strong>Masuk</strong>';
+    note.textContent = 'Only 2 People Can Register This Site';
+  } else {
+    btn.textContent = 'Masuk';
+    toggle.innerHTML = 'Belum punya akun? <strong>Daftar</strong>';
+    note.textContent = 'Only 2 People Can Login This Site';
+  }
+  document.getElementById('auth-error').classList.remove('show');
+});
 
 onAuthStateChanged(auth,async(user)=>{
   const authPage=document.getElementById('auth-page');
