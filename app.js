@@ -150,12 +150,12 @@ function renderTables(){
   const tp=document.getElementById('tablePemasukan');
   const dp=[...state.pemasukan].sort((a,b)=>(b.tanggal||'').localeCompare(a.tanggal||''));
   document.getElementById('countPemasukan').textContent=dp.length;
-  tp.innerHTML=dp.length?`<table><thead><tr><th>Tanggal</th><th>Kegunaan</th><th>Kategori</th><th style="text-align:right">Jumlah</th><th>Deskripsi</th><th style="text-align:center">Aksi</th></tr></thead><tbody>${dp.map(r=>`<tr><td style="white-space:nowrap">${fmtTanggal(r.tanggal)}</td><td>${esc(r.kegunaan)}</td><td><span class="badge">${esc(r.kategori)}</span></td><td class="num in">${fmtRp(r.jumlah)}</td><td style="color:var(--muted)">${r.deskripsi?esc(r.deskripsi):'—'}</td><td style="text-align:center"><button class="btn btn-danger btn-sm" data-del="pemasukan" data-id="${r.id}">Hapus</button></td></tr>`).join('')}</tbody></table>`:`<div class="empty"><span class="big">📥</span>Belum ada data pemasukan.</div>`;
+  tp.innerHTML=dp.length?`<table><thead><tr><th>Tanggal</th><th>Sumber</th><th>Kategori</th><th style="text-align:right">Jumlah</th><th>Deskripsi</th><th style="text-align:center">Aksi</th></tr></thead><tbody>${dp.map(r=>`<tr><td style="white-space:nowrap">${fmtTanggal(r.tanggal)}</td><td>${esc(r.kegunaan)}</td><td><span class="badge">${esc(r.kategori)}</span></td><td class="num in">${fmtRp(r.jumlah)}</td><td style="color:var(--muted)">${r.deskripsi?esc(r.deskripsi):'—'}</td><td style="text-align:center"><button class="btn btn-danger btn-sm" data-del="pemasukan" data-id="${r.id}">Hapus</button></td></tr>`).join('')}</tbody></table>`:`<div class="empty"><span class="big">📥</span>Belum ada data pemasukan.</div>`;
 
   const tk=document.getElementById('tablePengeluaran');
   const dk=[...state.pengeluaran].sort((a,b)=>(b.tanggal||'').localeCompare(a.tanggal||''));
   document.getElementById('countPengeluaran').textContent=dk.length;
-  tk.innerHTML=dk.length?`<table><thead><tr><th>Tanggal</th><th>Sumber</th><th>Kategori</th><th style="text-align:right">Jumlah</th><th>Deskripsi</th><th style="text-align:center">Aksi</th></tr></thead><tbody>${dk.map(r=>`<tr><td style="white-space:nowrap">${fmtTanggal(r.tanggal)}</td><td>${esc(r.sumber)}</td><td><span class="badge" style="background:#fef3c7;color:#92400e">${esc(r.kategori)}</span></td><td class="num out">${fmtRp(r.jumlah)}</td><td style="color:var(--muted)">${r.deskripsi?esc(r.deskripsi):'—'}</td><td style="text-align:center"><button class="btn btn-danger btn-sm" data-del="pengeluaran" data-id="${r.id}">Hapus</button></td></tr>`).join('')}</tbody></table>`:`<div class="empty"><span class="big">📤</span>Belum ada data pengeluaran.</div>`;
+  tk.innerHTML=dk.length?`<table><thead><tr><th>Tanggal</th><th>Kegunaan</th><th>Kategori</th><th style="text-align:right">Jumlah</th><th>Deskripsi</th><th style="text-align:center">Aksi</th></tr></thead><tbody>${dk.map(r=>`<tr><td style="white-space:nowrap">${fmtTanggal(r.tanggal)}</td><td>${esc(r.sumber)}</td><td><span class="badge" style="background:#fef3c7;color:#92400e">${esc(r.kategori)}</span></td><td class="num out">${fmtRp(r.jumlah)}</td><td style="color:var(--muted)">${r.deskripsi?esc(r.deskripsi):'—'}</td><td style="text-align:center"><button class="btn btn-danger btn-sm" data-del="pengeluaran" data-id="${r.id}">Hapus</button></td></tr>`).join('')}</tbody></table>`:`<div class="empty"><span class="big">📤</span>Belum ada data pengeluaran.</div>`;
 
   const recent=[...state.pemasukan.map(r=>({...r,_tipe:'masuk'})),...state.pengeluaran.map(r=>({...r,_tipe:'keluar'}))].sort((a,b)=>(b.tanggal||'').localeCompare(a.tanggal||'')).slice(0,7);
   const rt=document.getElementById('recentTable');
@@ -222,8 +222,8 @@ function closeModal(){
 
 function updateModalFields(){
   const isIncome = modalState.tab === 'income';
-  document.getElementById('entry-label-kegunaan').innerHTML = isIncome ? 'Kegunaan <span class="req">*</span>' : 'Sumber <span class="req">*</span>';
-  document.getElementById('entry-kegunaan').placeholder = isIncome ? 'cth: Gaji Bulan Ini' : 'cth: Toko Sembako';
+  document.getElementById('entry-label-kegunaan').innerHTML = isIncome ? 'Sumber <span class="req">*</span>' : 'Kegunaan <span class="req">*</span>';
+  document.getElementById('entry-kegunaan').placeholder = isIncome ? 'cth: PT ABC / Klien' : 'cth: Beli Sembako';
 }
 
 function getKategoriList(){
@@ -499,7 +499,7 @@ function renderPreview(){
   const box=document.getElementById('tablePreview');
   if(!rows.length){ box.innerHTML=`<div class="empty"><span class="big">📄</span>Tidak ada data pada filter ini.</div>`; return; }
   const total=rows.reduce((s,r)=>s+r.Jumlah,0);
-  box.innerHTML=`<table><thead><tr><th>Tanggal</th><th>Jenis</th><th>Kegunaan</th><th>Kategori</th><th style="text-align:right">Jumlah</th><th>Deskripsi</th></tr></thead><tbody>${rows.map(r=>`<tr><td style="white-space:nowrap">${fmtTanggal(r.Tanggal)}</td><td>${r._tipe==='Pemasukan'?'<span class="badge" style="background:#d1fae5;color:#065f46">Masuk</span>':'<span class="badge" style="background:#fee2e2;color:#991b1b">Keluar</span>'}</td><td>${esc(r.Kegunaan)}</td><td>${esc(r.Kategori)}</td><td class="num ${r._tipe==='Pemasukan'?'in':'out'}">${fmtRp(r.Jumlah)}</td><td style="color:var(--muted)">${r.Deskripsi?esc(r.Deskripsi):'—'}</td></tr>`).join('')}<tr style="background:#f8fafc;font-weight:700"><td colspan="4" style="text-align:right">TOTAL</td><td class="num">${fmtRp(total)}</td><td></td></tr></tbody></table>`;
+  box.innerHTML=`<table><thead><tr><th>Tanggal</th><th>Jenis</th><th>keterangan</th><th>Kategori</th><th style="text-align:right">Jumlah</th><th>Deskripsi</th></tr></thead><tbody>${rows.map(r=>`<tr><td style="white-space:nowrap">${fmtTanggal(r.Tanggal)}</td><td>${r._tipe==='Pemasukan'?'<span class="badge" style="background:#d1fae5;color:#065f46">Masuk</span>':'<span class="badge" style="background:#fee2e2;color:#991b1b">Keluar</span>'}</td><td>${esc(r.Kegunaan)}</td><td>${esc(r.Kategori)}</td><td class="num ${r._tipe==='Pemasukan'?'in':'out'}">${fmtRp(r.Jumlah)}</td><td style="color:var(--muted)">${r.Deskripsi?esc(r.Deskripsi):'—'}</td></tr>`).join('')}<tr style="background:#f8fafc;font-weight:700"><td colspan="4" style="text-align:right">TOTAL</td><td class="num">${fmtRp(total)}</td><td></td></tr></tbody></table>`;
 }
 document.getElementById('btnPreview').addEventListener('click',renderPreview);
 document.getElementById('btnExport').addEventListener('click',()=>{
