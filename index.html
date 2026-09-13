@@ -263,39 +263,52 @@
 <!-- ============ MODAL ENTRY BARU ============ -->
 <div class="modal-overlay" id="modal-entry" style="display:none">
   <div class="modal">
+
+    <!-- HEADER: Selalu di atas -->
     <div class="modal-header">
       <h2>Entry Data</h2>
       <button class="modal-close" id="modal-close">✕</button>
     </div>
-    <div class="modal-tabs" id="modal-tabs">
-      <button data-tab="expense" class="active">Pengeluaran</button>
-      <button data-tab="income">Pemasukan</button>
-    </div>
-    <div class="kategori-header">
-      <label>KATEGORI</label>
-      <a href="#" class="link-kategori" id="link-atur-kategori">Atur →</a>
-    </div>
-    <input type="text" class="search-kategori" id="search-kategori" placeholder="Cari kategori...">
-    <div class="kategori-grid" id="kategori-grid"></div>
-    <div class="entry-fields">
-      <div class="field"><label>Tanggal <span class="req">*</span></label><input type="date" id="entry-tanggal"></div>
-      <div class="field"><label id="entry-label-kegunaan">Kegunaan <span class="req">*</span></label><input type="text" id="entry-kegunaan" placeholder="cth: Beli Sembako" maxlength="80"></div>
-      <div class="field"><label>Deskripsi</label><input type="text" id="entry-deskripsi" placeholder="Opsional..." maxlength="120"></div>
-    </div>
-    <div class="amount-display">
-      <div class="amount-label">JUMLAH</div>
-      <div class="amount-value">
-        <span class="amount-currency">Rp</span>
-        <span class="amount-number" id="amount-number">0</span>
+
+    <!-- BODY: Bisa di-scroll -->
+    <div class="modal-body">
+      <div class="modal-tabs" id="modal-tabs">
+        <button data-tab="expense" class="active">Pengeluaran</button>
+        <button data-tab="income">Pemasukan</button>
+      </div>
+
+      <div class="kategori-header">
+        <label>KATEGORI</label>
+        <a href="#" class="link-kategori" id="link-atur-kategori">Atur →</a>
+      </div>
+      <input type="text" class="search-kategori" id="search-kategori" placeholder="Cari kategori...">
+      <div class="kategori-grid" id="kategori-grid"></div>
+
+      <div class="entry-fields">
+        <div class="field"><label>Tanggal <span class="req">*</span></label><input type="date" id="entry-tanggal"></div>
+        <div class="field"><label id="entry-label-kegunaan">Kegunaan <span class="req">*</span></label><input type="text" id="entry-kegunaan" placeholder="cth: Beli Sembako" maxlength="80"></div>
+        <div class="field"><label>Deskripsi</label><input type="text" id="entry-deskripsi" placeholder="Opsional..." maxlength="120"></div>
       </div>
     </div>
-    <div class="numpad">
-      <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button><button data-key="÷" class="op">÷</button>
-      <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button><button data-key="×" class="op">×</button>
-      <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button><button data-key="−" class="op">−</button>
-      <button data-key="00">00</button><button data-key="0">0</button><button data-key="⌫" class="op">⌫</button><button data-key="+" class="op">+</button>
+
+    <!-- FOOTER: Selalu di bawah -->
+    <div class="modal-footer">
+      <div class="amount-display">
+        <div class="amount-label">JUMLAH</div>
+        <div class="amount-value">
+          <span class="amount-currency">Rp</span>
+          <span class="amount-number" id="amount-number">0</span>
+        </div>
+      </div>
+      <div class="numpad">
+        <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button><button data-key="÷" class="op">÷</button>
+        <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button><button data-key="×" class="op">×</button>
+        <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button><button data-key="−" class="op">−</button>
+        <button data-key="00">00</button><button data-key="0">0</button><button data-key="⌫" class="op">⌫</button><button data-key="+" class="op">+</button>
+      </div>
+      <button class="btn-save-entry" id="btn-save-entry">Simpan</button>
     </div>
-    <button class="btn-save-entry" id="btn-save-entry">Simpan</button>
+
   </div>
 </div>
 
