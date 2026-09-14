@@ -57,7 +57,8 @@ const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
 const todayISO = () => { const d=new Date(); const off=d.getTimezoneOffset(); return new Date(d.getTime()-off*60000).toISOString().slice(0,10); };
 
 // Splash screen control
-const SPLASH_MIN_DURATION = 350;
+const SPLASH_MIN_DURATION = 500;
+const SPLASH_MAX_DURATION = 2000;   // Fallback: paksa hilang setelah 3.5s
 const splashStartTime = Date.now();
 let splashHidden = false;
 function hideSplash(){
@@ -72,6 +73,13 @@ function hideSplash(){
     setTimeout(() => splash.remove(), 500);
   }, remaining);
 }
+// Fallback: kalau Firebase tidak response, paksa hilang
+setTimeout(() => {
+  if(!splashHidden){
+    console.warn('[Splash] Fallback timeout — memaksa splash hilang');
+    hideSplash();
+  }
+}, SPLASH_MAX_DURATION);
 
 // =========================================================
 // FEATHER ICONS REFRESH
