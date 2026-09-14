@@ -1,7 +1,7 @@
 // =========================================================
 // SERVICE WORKER - KeuanganKu PWA
 // =========================================================
-const CACHE_NAME = 'keuanganku-v1';
+const CACHE_NAME = 'keuanganku-v2';
 
 // File yang di-cache saat pertama kali install
 const PRECACHE_URLS = [
