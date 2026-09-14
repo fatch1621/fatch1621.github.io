@@ -1,24 +1,32 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>KeuanganKu</title>
-<link rel="icon" type="image/png" href="favicon.png">
-<link rel="apple-touch-icon" href="favicon.png">
-<link rel="manifest" href="manifest.json">
 
-  <!-- PWA Meta Tags -->
+<!-- PWA Meta Tags -->
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#16a34a">
+<meta name="theme-color" content="#3B2A20">
 <meta name="description" content="Aplikasi manajemen keuangan pribadi">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="KeuanganKu">
-<link rel="apple-touch-icon" href="foto1.jpg">
-<link rel="icon" type="image/jpeg" href="foto1.jpg">
-<link rel="mobile-web-app-capable" content="yes">
-  <!-- Library -->
+<link rel="icon" type="image/png" href="foto1.png">
+<link rel="shortcut icon" type="image/png" href="foto1.png">
+<link rel="apple-touch-icon" href="foto1.png">
+<link rel="mask-icon" href="foto1.png" color="#3B2A20">
+<meta name="mobile-web-app-capable" content="yes">
+
+<!-- Font: Plus Jakarta Sans -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- Feather Icons -->
+<script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.2/dist/feather.min.js"></script>
+
+<!-- Library -->
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -28,7 +36,7 @@
 <!-- ============ HALAMAN LOGIN ============ -->
 <div id="auth-page" class="auth-page">
   <div class="auth-card">
-    <img src="foto1.png" alt="Logo" class="auth-logo-img">
+    <img src="foto1.jpg" alt="Logo" class="auth-logo-img">
     
     <div id="login-form">
       <input type="text" id="login-username" placeholder="Username" autocomplete="username" autocapitalize="off" autocorrect="off">
@@ -54,7 +62,7 @@
 <!-- ============ HALAMAN REMOVED ============ -->
 <div id="removed-page" class="auth-page" style="display:none">
   <div class="auth-card">
-    <div style="font-size:60px;margin-bottom:16px">🚫</div>
+    <div style="margin-bottom:16px"><i data-feather="x-octagon" style="width:60px;height:60px;color:#b91c1c"></i></div>
     <h2 style="margin-bottom:12px;color:#7B5E4A">Akses Ditolak</h2>
     <p style="color:#7B5E4A;font-size:14px;margin-bottom:20px;line-height:1.5">Anda telah dikeluarkan dari workspace. Hubungi owner untuk mengaktifkan kembali akun Anda.</p>
     <button id="btn-logout-removed" class="auth-submit">Logout</button>
@@ -68,56 +76,84 @@
 
   <aside class="sidebar" id="sidebar">
     <div class="brand">
-      <div class="logo">💰</div>
+      <div class="logo"><i data-feather="dollar-sign"></i></div>
       <div><h1>KeuanganKu</h1><small>Smart Money Manager</small></div>
     </div>
     <nav id="nav">
       <div class="nav-section">TRACKER</div>
-      <button data-page="dashboard" class="active"><span class="ico">📊</span> Dashboard</button>
-      <button data-page="detail"><span class="ico">📋</span> Detail Transaksi</button>
+      <button data-page="dashboard" class="active"><i data-feather="bar-chart-2" class="ico"></i> Dashboard</button>
+      <button data-page="detail"><i data-feather="file-text" class="ico"></i> Detail Transaksi</button>
       <div class="nav-section">SETUP</div>
-      <button data-page="pemasukan"><span class="ico">📥</span> Input Pemasukan</button>
-      <button data-page="pengeluaran"><span class="ico">📤</span> Input Pengeluaran</button>
-      <button data-page="kategori"><span class="ico">🏷️</span> Kategori</button>
-      <button data-page="anggota"><span class="ico">👥</span> Anggota</button>
+      <button data-page="pemasukan"><i data-feather="download" class="ico"></i> Input Pemasukan</button>
+      <button data-page="pengeluaran"><i data-feather="upload" class="ico"></i> Input Pengeluaran</button>
+      <button data-page="kategori"><i data-feather="tag" class="ico"></i> Kategori</button>
+      <button data-page="anggota"><i data-feather="users" class="ico"></i> Anggota</button>
       <div class="nav-section">AKUN</div>
-      <button data-page="profil"><span class="ico">👤</span> Profil Saya</button>
+      <button data-page="profil"><i data-feather="user" class="ico"></i> Profil Saya</button>
       <div class="nav-section">REPORT</div>
-      <button data-page="laporan"><span class="ico">📑</span> Laporan & Export</button>
+      <button data-page="laporan"><i data-feather="file-text" class="ico"></i> Laporan & Export</button>
     </nav>
-    <button id="btn-logout" class="btn-logout"><span>🚪</span> Logout</button>
+    <button id="btn-logout" class="btn-logout"><i data-feather="log-out" style="width:16px;height:16px"></i> Logout</button>
   </aside>
 
   <header class="topbar">
-    <button class="hamburger" id="hamburger">☰</button>
+    <button class="hamburger" id="hamburger"><i data-feather="menu"></i></button>
     <h1 class="topbar-title" id="topbar-title">Dashboard</h1>
-    <button class="btn-new-entry" id="btn-new-entry"><span>+</span> Entri Baru</button>
+    <button class="theme-toggle" id="btn-theme-toggle" title="Ganti tema"><i data-feather="moon"></i></button>
+    <button class="btn-new-entry" id="btn-new-entry"><i data-feather="plus"></i> Entri Baru</button>
   </header>
 
   <main class="main">
 
     <!-- DASHBOARD -->
     <section class="page active" id="page-dashboard">
-      <div class="alert-card" id="alert-offline">
-        <button class="alert-close" onclick="this.parentElement.style.display='none'">✕</button>
-        <strong>👋 Selamat datang di KeuanganKu</strong>
+      <div class="alert-card" id="alert-welcome">
+        <button class="alert-close" onclick="this.parentElement.style.display='none'"><i data-feather="x" style="width:16px;height:16px"></i></button>
+        <strong>Selamat datang di KeuanganKu</strong>
         <p>Catat pemasukan & pengeluaranmu biar keuangan lebih terkontrol.</p>
       </div>
       <div class="filter-row">
-        <button class="chip" data-periode="bulan-ini">📅 Bulan Ini</button>
+        <button class="chip" data-periode="bulan-ini">Bulan Ini</button>
         <button class="chip" data-periode="tahun-ini">Tahun Ini</button>
         <button class="chip active" data-periode="semua">Semua</button>
       </div>
       <div class="stat-cards">
-        <div class="stat-card balance"><div class="stat-icon">💼</div><div class="stat-label">Saldo</div><div class="stat-value" id="statSaldo">Rp 0</div><div class="stat-sub" id="statSaldoSub">—</div></div>
-        <div class="stat-card income"><div class="stat-icon">📈</div><div class="stat-label">Masuk</div><div class="stat-value" id="statPemasukan">Rp 0</div><div class="stat-sub" id="statPemasukanSub">0 trx</div></div>
-        <div class="stat-card expense"><div class="stat-icon">📉</div><div class="stat-label">Keluar</div><div class="stat-value" id="statPengeluaran">Rp 0</div><div class="stat-sub" id="statPengeluaranSub">0 trx</div></div>
+        <div class="stat-card balance">
+          <div class="stat-icon"><i data-feather="briefcase"></i></div>
+          <div class="stat-label">Saldo</div>
+          <div class="stat-value" id="statSaldo">Rp 0</div>
+          <div class="stat-sub" id="statSaldoSub">—</div>
+        </div>
+        <div class="stat-card income">
+          <div class="stat-icon"><i data-feather="trending-up"></i></div>
+          <div class="stat-label">Masuk</div>
+          <div class="stat-value" id="statPemasukan">Rp 0</div>
+          <div class="stat-sub" id="statPemasukanSub">0 trx</div>
+        </div>
+        <div class="stat-card expense">
+          <div class="stat-icon"><i data-feather="trending-down"></i></div>
+          <div class="stat-label">Keluar</div>
+          <div class="stat-value" id="statPengeluaran">Rp 0</div>
+          <div class="stat-sub" id="statPengeluaranSub">0 trx</div>
+        </div>
       </div>
-      <div class="card"><div class="card-head"><h3>Pemasukan vs Pengeluaran</h3></div><div class="chart-box"><canvas id="chartBulanan"></canvas></div></div>
-      <div class="card"><div class="card-head"><h3>Pengeluaran per Kategori</h3></div><div class="chart-box sm"><canvas id="chartKatKeluar"></canvas></div></div>
-      <div class="card"><div class="card-head"><h3>Pemasukan per Kategori</h3></div><div class="chart-box sm"><canvas id="chartKatMasuk"></canvas></div></div>
       <div class="card">
-        <div class="card-head"><h3>Transaksi Terbaru</h3><a href="#" class="link-more" id="link-ke-detail">Lihat semua →</a></div>
+        <div class="card-head"><h3>Pemasukan vs Pengeluaran</h3></div>
+        <div class="chart-box"><canvas id="chartBulanan"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Pengeluaran per Kategori</h3></div>
+        <div class="chart-box sm"><canvas id="chartKatKeluar"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Pemasukan per Kategori</h3></div>
+        <div class="chart-box sm"><canvas id="chartKatMasuk"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <h3>Transaksi Terbaru</h3>
+          <a href="#" class="link-more" id="link-ke-detail">Lihat semua →</a>
+        </div>
         <div id="recentTable"></div>
       </div>
     </section>
@@ -129,50 +165,74 @@
         <button class="chip" data-dfilter="masuk">Masuk</button>
         <button class="chip" data-dfilter="keluar">Keluar</button>
       </div>
-      <div class="search-box"><span class="search-ico">🔍</span><input type="text" id="detail-search" placeholder="Cari keterangan / kategori..."></div>
-      <div class="card"><div class="card-head"><h3>Detail Transaksi <span class="badge" id="countDetail">0</span></h3></div><div id="detailList"></div></div>
+      <div class="search-box">
+        <i data-feather="search" class="search-ico"></i>
+        <input type="text" id="detail-search" placeholder="Cari keterangan / kategori...">
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Detail Transaksi <span class="badge" id="countDetail">0</span></h3></div>
+        <div id="detailList"></div>
+      </div>
     </section>
 
     <!-- PEMASUKAN -->
     <section class="page" id="page-pemasukan">
       <div class="card">
-        <div class="card-head"><h3>➕ Tambah Pemasukan</h3></div>
+        <div class="card-head"><h3>Tambah Pemasukan</h3></div>
         <form id="formPemasukan" novalidate>
           <div class="field"><label>Tanggal <span class="req">*</span></label><input type="date" id="inTanggal"><div class="error-msg" id="err-inTanggal"></div></div>
           <div class="field"><label>Sumber <span class="req">*</span></label><input type="text" id="inKegunaan" placeholder="cth: PT ABC / Klien" maxlength="80"><div class="error-msg" id="err-inKegunaan"></div></div>
           <div class="field"><label>Kategori <span class="req">*</span></label><select id="inKategori"></select><div class="error-msg" id="err-inKategori"></div></div>
           <div class="field"><label>Jumlah (Rp) <span class="req">*</span></label><input type="number" id="inJumlah" placeholder="cth: 5000000" min="1" step="any"><div class="error-msg" id="err-inJumlah"></div></div>
           <div class="field"><label>Deskripsi (opsional)</label><textarea id="inDeskripsi" placeholder="Catatan tambahan..." maxlength="250"></textarea></div>
-          <div class="form-actions"><button type="submit" class="btn btn-success btn-block">💾 Simpan Pemasukan</button></div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-block"><i data-feather="save" style="width:16px;height:16px"></i> Simpan Pemasukan</button>
+          </div>
         </form>
       </div>
-      <div class="card"><div class="card-head"><h3>Riwayat Pemasukan <span class="badge" id="countPemasukan">0</span></h3></div><div id="tablePemasukan"></div></div>
+      <div class="card">
+        <div class="card-head"><h3>Riwayat Pemasukan <span class="badge" id="countPemasukan">0</span></h3></div>
+        <div id="tablePemasukan"></div>
+      </div>
     </section>
 
     <!-- PENGELUARAN -->
     <section class="page" id="page-pengeluaran">
       <div class="card">
-        <div class="card-head"><h3>➕ Tambah Pengeluaran</h3></div>
+        <div class="card-head"><h3>Tambah Pengeluaran</h3></div>
         <form id="formPengeluaran" novalidate>
           <div class="field"><label>Tanggal <span class="req">*</span></label><input type="date" id="outTanggal"><div class="error-msg" id="err-outTanggal"></div></div>
           <div class="field"><label>Kegunaan <span class="req">*</span></label><input type="text" id="outSumber" placeholder="cth: Beli Sembako" maxlength="80"><div class="error-msg" id="err-outSumber"></div></div>
           <div class="field"><label>Kategori <span class="req">*</span></label><select id="outKategori"></select><div class="error-msg" id="err-outKategori"></div></div>
           <div class="field"><label>Jumlah (Rp) <span class="req">*</span></label><input type="number" id="outJumlah" placeholder="cth: 150000" min="1" step="any"><div class="error-msg" id="err-outJumlah"></div></div>
           <div class="field"><label>Deskripsi (opsional)</label><textarea id="outDeskripsi" placeholder="Catatan tambahan..." maxlength="250"></textarea></div>
-          <div class="form-actions"><button type="submit" class="btn btn-primary btn-block">💾 Simpan Pengeluaran</button></div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-block"><i data-feather="save" style="width:16px;height:16px"></i> Simpan Pengeluaran</button>
+          </div>
         </form>
       </div>
-      <div class="card"><div class="card-head"><h3>Riwayat Pengeluaran <span class="badge" id="countPengeluaran">0</span></h3></div><div id="tablePengeluaran"></div></div>
+      <div class="card">
+        <div class="card-head"><h3>Riwayat Pengeluaran <span class="badge" id="countPengeluaran">0</span></h3></div>
+        <div id="tablePengeluaran"></div>
+      </div>
     </section>
 
     <!-- KATEGORI -->
     <section class="page" id="page-kategori">
-      <div class="card"><div class="card-head"><h3>📥 Kategori Pemasukan</h3></div>
-        <form class="kat-form" id="formKatMasuk"><input type="text" id="inputKatMasuk" placeholder="Nama kategori baru..." maxlength="40"><button type="submit" class="btn btn-success btn-sm">Tambah</button></form>
+      <div class="card">
+        <div class="card-head"><h3>Kategori Pemasukan</h3></div>
+        <form class="kat-form" id="formKatMasuk">
+          <input type="text" id="inputKatMasuk" placeholder="Nama kategori baru..." maxlength="40">
+          <button type="submit" class="btn btn-primary btn-sm">Tambah</button>
+        </form>
         <div class="kat-list" id="listKatMasuk"></div>
       </div>
-      <div class="card"><div class="card-head"><h3>📤 Kategori Pengeluaran</h3></div>
-        <form class="kat-form" id="formKatKeluar"><input type="text" id="inputKatKeluar" placeholder="Nama kategori baru..." maxlength="40"><button type="submit" class="btn btn-primary btn-sm">Tambah</button></form>
+      <div class="card">
+        <div class="card-head"><h3>Kategori Pengeluaran</h3></div>
+        <form class="kat-form" id="formKatKeluar">
+          <input type="text" id="inputKatKeluar" placeholder="Nama kategori baru..." maxlength="40">
+          <button type="submit" class="btn btn-primary btn-sm">Tambah</button>
+        </form>
         <div class="kat-list" id="listKatKeluar"></div>
       </div>
     </section>
@@ -180,18 +240,25 @@
     <!-- ANGGOTA -->
     <section class="page" id="page-anggota">
       <div class="card">
-        <div class="card-head"><h3>👥 Workspace</h3></div>
-        <div class="field"><label>Nama Workspace</label>
-          <div style="display:flex;gap:8px"><input type="text" id="ws-name-input" placeholder="Nama workspace"><button class="btn btn-primary btn-sm" id="btn-save-ws-name" style="white-space:nowrap">Simpan</button></div>
+        <div class="card-head"><h3>Workspace</h3></div>
+        <div class="field">
+          <label>Nama Workspace</label>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="ws-name-input" placeholder="Nama workspace">
+            <button class="btn btn-primary btn-sm" id="btn-save-ws-name" style="white-space:nowrap">Simpan</button>
+          </div>
         </div>
       </div>
-      <div class="card"><div class="card-head"><h3>Daftar Anggota <span class="badge" id="countAnggota">0</span></h3></div><div id="anggotaList"></div></div>
+      <div class="card">
+        <div class="card-head"><h3>Daftar Anggota <span class="badge" id="countAnggota">0</span></h3></div>
+        <div id="anggotaList"></div>
+      </div>
     </section>
 
     <!-- PROFIL -->
     <section class="page" id="page-profil">
       <div class="card">
-        <div class="card-head"><h3>👤 Profil Saya</h3></div>
+        <div class="card-head"><h3>Profil Saya</h3></div>
         <div class="profile-header">
           <div class="profile-avatar" id="profileAvatar">?</div>
           <div style="flex:1;min-width:0">
@@ -202,55 +269,67 @@
         </div>
       </div>
       <div class="card">
-        <div class="card-head"><h3>🔐 Keamanan Akun</h3></div>
-        <button class="menu-btn" id="btn-ubah-username"><span>✏️ Ubah Username</span><span>›</span></button>
-        <button class="menu-btn" id="btn-ubah-email"><span>📧 Ubah Email</span><span>›</span></button>
-        <button class="menu-btn" id="btn-ubah-password"><span>🔑 Ubah Password</span><span>›</span></button>
+        <div class="card-head"><h3>Keamanan Akun</h3></div>
+        <button class="menu-btn" id="btn-ubah-username"><span><i data-feather="edit-2" style="width:16px;height:16px;margin-right:8px"></i> Ubah Username</span><span>›</span></button>
+        <button class="menu-btn" id="btn-ubah-email"><span><i data-feather="mail" style="width:16px;height:16px;margin-right:8px"></i> Ubah Email</span><span>›</span></button>
+        <button class="menu-btn" id="btn-ubah-password"><span><i data-feather="key" style="width:16px;height:16px;margin-right:8px"></i> Ubah Password</span><span>›</span></button>
       </div>
-      <div class="card" style="border:1.5px solid #fee2e2">
-        <div class="card-head"><h3 style="color:#b91c1c">⚠️ Zona Bahaya</h3></div>
-        <p style="font-size:12.5px;color:var(--muted);margin-bottom:14px;line-height:1.5">Setelah akun dihapus, kamu tidak bisa login lagi. Transaksi lama tetap tersimpan dengan nama username-mu.</p>
-        <button class="btn btn-danger btn-block" id="btn-hapus-akun">🗑️ Hapus Akun Saya</button>
+      <div class="card danger-zone">
+        <div class="card-head"><h3>Zona Bahaya</h3></div>
+        <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px;line-height:1.5">Setelah akun dihapus, kamu tidak bisa login lagi. Transaksi lama tetap tersimpan dengan nama username-mu.</p>
+        <button class="btn btn-danger btn-block" id="btn-hapus-akun"><i data-feather="trash-2" style="width:16px;height:16px"></i> Hapus Akun Saya</button>
       </div>
     </section>
 
     <!-- LAPORAN -->
     <section class="page" id="page-laporan">
       <div class="card">
-        <div class="card-head"><h3>⚙️ Filter Laporan</h3></div>
+        <div class="card-head"><h3>Filter Laporan</h3></div>
         <div class="field"><label>Jenis Transaksi</label><select id="expJenis"><option value="semua">Semua Transaksi</option><option value="pemasukan">Pemasukan saja</option><option value="pengeluaran">Pengeluaran saja</option></select></div>
         <div class="field"><label>Dari Tanggal</label><input type="date" id="expDari"></div>
         <div class="field"><label>Sampai Tanggal</label><input type="date" id="expSampai"></div>
         <div class="form-actions" style="flex-direction:column">
-          <button class="btn btn-ghost btn-block" id="btnPreview">🔍 Tampilkan Preview</button>
-          <button class="btn btn-primary btn-block" id="btnExport">📊 Export ke Excel</button>
+          <button class="btn btn-ghost btn-block" id="btnPreview"><i data-feather="search" style="width:16px;height:16px"></i> Tampilkan Preview</button>
+          <button class="btn btn-primary btn-block" id="btnExport"><i data-feather="download" style="width:16px;height:16px"></i> Export ke Excel</button>
         </div>
       </div>
-      <div class="card"><div class="card-head"><h3>Preview <span class="badge" id="countPreview">0</span></h3></div><div id="tablePreview"></div></div>
+      <div class="card">
+        <div class="card-head"><h3>Preview <span class="badge" id="countPreview">0</span></h3></div>
+        <div id="tablePreview"></div>
+      </div>
     </section>
 
   </main>
 
   <nav class="bottom-nav" id="bottom-nav">
-    <button data-page="dashboard" class="active"><span class="bn-ico">▦</span><span class="bn-label">Dashboard</span></button>
-    <button data-page="pemasukan"><span class="bn-ico">📥</span><span class="bn-label">Masuk</span></button>
-    <button data-page="detail"><span class="bn-ico">📋</span><span class="bn-label">Detail</span></button>
-    <button data-page="pengeluaran"><span class="bn-ico">📤</span><span class="bn-label">Keluar</span></button>
-    <button data-page="laporan"><span class="bn-ico">📊</span><span class="bn-label">Laporan</span></button>
+    <button data-page="dashboard" class="active"><i data-feather="bar-chart-2" class="bn-ico"></i><span class="bn-label">Dashboard</span></button>
+    <button data-page="pemasukan"><i data-feather="download" class="bn-ico"></i><span class="bn-label">Masuk</span></button>
+    <button data-page="detail"><i data-feather="file-text" class="bn-ico"></i><span class="bn-label">Detail</span></button>
+    <button data-page="pengeluaran"><i data-feather="upload" class="bn-ico"></i><span class="bn-label">Keluar</span></button>
+    <button data-page="laporan"><i data-feather="file-text" class="bn-ico"></i><span class="bn-label">Laporan</span></button>
   </nav>
 </div>
 
 <!-- ============ MODAL ENTRY ============ -->
 <div class="modal-overlay" id="modal-entry" style="display:none">
   <div class="modal">
-    <div class="modal-header"><h2>Entry Data</h2><button class="modal-close" id="modal-close">✕</button></div>
+    <div class="modal-header">
+      <h2>Entry Data</h2>
+      <button class="modal-close" id="modal-close"><i data-feather="x"></i></button>
+    </div>
     <div class="modal-body">
       <div class="modal-tabs" id="modal-tabs">
         <button data-tab="expense" class="active">Pengeluaran</button>
         <button data-tab="income">Pemasukan</button>
       </div>
-      <div class="kategori-header"><label>KATEGORI</label><a href="#" class="link-kategori" id="link-atur-kategori">Atur →</a></div>
-      <input type="text" class="search-kategori" id="search-kategori" placeholder="Cari kategori...">
+      <div class="kategori-header">
+        <label>KATEGORI</label>
+        <a href="#" class="link-kategori" id="link-atur-kategori">Atur →</a>
+      </div>
+      <div class="search-box">
+        <i data-feather="search" class="search-ico"></i>
+        <input type="text" class="search-kategori" id="search-kategori" placeholder="Cari kategori...">
+      </div>
       <div class="kategori-grid" id="kategori-grid"></div>
       <div class="entry-fields">
         <div class="field"><label>Tanggal <span class="req">*</span></label><input type="date" id="entry-tanggal"></div>
@@ -261,7 +340,10 @@
     <div class="modal-footer">
       <div class="amount-display">
         <div class="amount-label">JUMLAH</div>
-        <div class="amount-value"><span class="amount-currency">Rp</span><span class="amount-number" id="amount-number">0</span></div>
+        <div class="amount-value">
+          <span class="amount-currency">Rp</span>
+          <span class="amount-number" id="amount-number">0</span>
+        </div>
       </div>
       <div class="numpad">
         <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button><button data-key="÷" class="op">÷</button>
@@ -277,9 +359,12 @@
 <!-- ============ MODAL UBAH USERNAME ============ -->
 <div class="modal-overlay" id="modal-username" style="display:none">
   <div class="modal modal-small">
-    <div class="modal-header"><h2>✏️ Ubah Username</h2><button class="modal-close" onclick="document.getElementById('modal-username').style.display='none';document.body.style.overflow=''">✕</button></div>
+    <div class="modal-header">
+      <h2>Ubah Username</h2>
+      <button class="modal-close" onclick="document.getElementById('modal-username').style.display='none';document.body.style.overflow=''"><i data-feather="x"></i></button>
+    </div>
     <div class="modal-body">
-      <p style="font-size:12.5px;color:var(--muted);margin-bottom:14px">Username digunakan untuk login. Transaksi lama tetap tersimpan dengan username lama.</p>
+      <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px">Username digunakan untuk login. Transaksi lama tetap tersimpan dengan username lama.</p>
       <div class="field"><label>Username Baru</label><input type="text" id="new-username" placeholder="Username baru" autocapitalize="off" autocorrect="off"></div>
       <div class="error-msg" id="err-username"></div>
     </div>
@@ -292,9 +377,12 @@
 <!-- ============ MODAL UBAH EMAIL ============ -->
 <div class="modal-overlay" id="modal-email" style="display:none">
   <div class="modal modal-small">
-    <div class="modal-header"><h2>📧 Ubah Email</h2><button class="modal-close" onclick="document.getElementById('modal-email').style.display='none';document.body.style.overflow=''">✕</button></div>
+    <div class="modal-header">
+      <h2>Ubah Email</h2>
+      <button class="modal-close" onclick="document.getElementById('modal-email').style.display='none';document.body.style.overflow=''"><i data-feather="x"></i></button>
+    </div>
     <div class="modal-body">
-      <p style="font-size:12.5px;color:var(--muted);margin-bottom:14px">Kami akan kirim link verifikasi ke email baru. Klik link tersebut untuk konfirmasi.</p>
+      <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px">Kami akan kirim link verifikasi ke email baru. Klik link tersebut untuk konfirmasi.</p>
       <div class="field"><label>Email Baru</label><input type="email" id="new-email" placeholder="email@baru.com"></div>
       <div class="field"><label>Password Saat Ini</label><input type="password" id="email-password" placeholder="Untuk verifikasi"></div>
       <div class="error-msg" id="err-email"></div>
@@ -306,7 +394,10 @@
 <!-- ============ MODAL UBAH PASSWORD ============ -->
 <div class="modal-overlay" id="modal-password" style="display:none">
   <div class="modal modal-small">
-    <div class="modal-header"><h2>🔑 Ubah Password</h2><button class="modal-close" onclick="document.getElementById('modal-password').style.display='none';document.body.style.overflow=''">✕</button></div>
+    <div class="modal-header">
+      <h2>Ubah Password</h2>
+      <button class="modal-close" onclick="document.getElementById('modal-password').style.display='none';document.body.style.overflow=''"><i data-feather="x"></i></button>
+    </div>
     <div class="modal-body">
       <div class="field"><label>Password Saat Ini</label><input type="password" id="old-password" placeholder="Password lama"></div>
       <div class="field"><label>Password Baru</label><input type="password" id="new-password" placeholder="Minimal 6 karakter"></div>
@@ -320,15 +411,18 @@
 <!-- ============ MODAL HAPUS AKUN ============ -->
 <div class="modal-overlay" id="modal-hapus" style="display:none">
   <div class="modal modal-small">
-    <div class="modal-header"><h2 style="color:#b91c1c">⚠️ Hapus Akun</h2><button class="modal-close" onclick="document.getElementById('modal-hapus').style.display='none';document.body.style.overflow=''">✕</button></div>
+    <div class="modal-header">
+      <h2 style="color:#b91c1c">Hapus Akun</h2>
+      <button class="modal-close" onclick="document.getElementById('modal-hapus').style.display='none';document.body.style.overflow=''"><i data-feather="x"></i></button>
+    </div>
     <div class="modal-body">
       <p style="font-size:12.5px;color:#b91c1c;font-weight:600;margin-bottom:8px">PERINGATAN: Aksi ini tidak bisa dibatalkan!</p>
-      <p style="font-size:12.5px;color:var(--muted);margin-bottom:14px;line-height:1.5">Setelah dihapus, kamu tidak bisa login lagi dengan username ini. Transaksi yang sudah pernah kamu buat akan tetap tersimpan (dengan label username lama).</p>
+      <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px;line-height:1.5">Setelah dihapus, kamu tidak bisa login lagi dengan username ini. Transaksi yang sudah pernah kamu buat akan tetap tersimpan (dengan label username lama).</p>
       <div class="field"><label>Ketik <strong>HAPUS</strong> untuk konfirmasi</label><input type="text" id="confirm-delete-text" placeholder="HAPUS" autocapitalize="characters" autocorrect="off"></div>
       <div class="field"><label>Password Kamu</label><input type="password" id="delete-password" placeholder="Password saat ini"></div>
       <div class="error-msg" id="err-hapus"></div>
     </div>
-    <div class="modal-footer"><button class="btn-save-entry" id="btn-confirm-hapus" style="background:#b91c1c">🗑️ Hapus Akun Permanen</button></div>
+    <div class="modal-footer"><button class="btn-save-entry btn-danger-solid" id="btn-confirm-hapus">Hapus Akun Permanen</button></div>
   </div>
 </div>
 
