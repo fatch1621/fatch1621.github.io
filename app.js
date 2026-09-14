@@ -56,6 +56,23 @@ const fmtBulan = k => { const [y,m]=k.split('-'); return BULAN[parseInt(m,10)-1]
 const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 const todayISO = () => { const d=new Date(); const off=d.getTimezoneOffset(); return new Date(d.getTime()-off*60000).toISOString().slice(0,10); };
 
+// Splash screen control
+const SPLASH_MIN_DURATION = 1000;
+const splashStartTime = Date.now();
+let splashHidden = false;
+function hideSplash(){
+  if(splashHidden) return;
+  splashHidden = true;
+  const splash = document.getElementById('splash-screen');
+  if(!splash) return;
+  const elapsed = Date.now() - splashStartTime;
+  const remaining = Math.max(0, SPLASH_MIN_DURATION - elapsed);
+  setTimeout(() => {
+    splash.classList.add('hide');
+    setTimeout(() => splash.remove(), 500);
+  }, remaining);
+}
+
 // =========================================================
 // FEATHER ICONS REFRESH
 // =========================================================
@@ -275,6 +292,7 @@ onAuthStateChanged(auth, async (user) => {
     appLayout.style.display = 'none';
     removedPage.style.display = 'none';
     refreshIcons();
+    hideSplash();
     return;
   }
 
@@ -290,6 +308,7 @@ onAuthStateChanged(auth, async (user) => {
       appLayout.style.display = 'none';
       removedPage.style.display = 'flex';
       refreshIcons();
+      hideSplash();
       return;
     }
 
@@ -311,6 +330,7 @@ onAuthStateChanged(auth, async (user) => {
   }catch(e){
     console.error(e);
     toast('Error: ' + e.message, 'error');
+    hideSplash();
   }
 });
 
