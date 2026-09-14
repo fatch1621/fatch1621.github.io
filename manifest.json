@@ -1,0 +1,33 @@
+{
+  "name": "KeuanganKu - Manajemen Keuangan",
+  "short_name": "KeuanganKu",
+  "description": "Aplikasi manajemen keuangan pribadi untuk catat pemasukan dan pengeluaran",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#3B2A20",
+  "theme_color": "#16a34a",
+  "lang": "id",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    {
+      "src": "foto192.png",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "foto1.png",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "foto192.png",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "maskable"
+    }
+  ]
+}
