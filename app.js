@@ -991,3 +991,18 @@ document.getElementById('btnExport').addEventListener('click',()=>{
 document.getElementById('inTanggal').value=todayISO();
 document.getElementById('outTanggal').value=todayISO();
 document.getElementById('entry-tanggal').value=todayISO();
+
+// =========================================================
+// PWA: REGISTER SERVICE WORKER
+// =========================================================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(reg => {
+        console.log('[PWA] Service Worker terdaftar:', reg.scope);
+      })
+      .catch(err => {
+        console.warn('[PWA] Gagal daftar Service Worker:', err);
+      });
+  });
+}
