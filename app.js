@@ -57,7 +57,7 @@ const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
 const todayISO = () => { const d=new Date(); const off=d.getTimezoneOffset(); return new Date(d.getTime()-off*60000).toISOString().slice(0,10); };
 
 // Splash screen control
-const SPLASH_MIN_DURATION = 1000;
+const SPLASH_MIN_DURATION = 350;
 const splashStartTime = Date.now();
 let splashHidden = false;
 function hideSplash(){
