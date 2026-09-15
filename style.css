@@ -845,29 +845,32 @@ tbody td{
   padding:0;
   backdrop-filter:blur(4px);
   -webkit-backdrop-filter:blur(4px);
+  overflow:hidden;
 }
 .modal{
   background:var(--card);
   border-radius:22px 22px 0 0;
   width:100%;
   max-width:500px;
-  height:96vh;
-  height:96dvh;
   max-height:96dvh;
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
+  overflow-y:auto;
+  overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
   animation:slideUp .3s cubic-bezier(.2,.9,.3,1.15);
 }
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
 
 .modal-header{
-  flex-shrink:0;
+  position:sticky;
+  top:0;
+  z-index:6;
   display:flex;justify-content:space-between;align-items:center;
   padding:14px 18px;
   border-bottom:1px solid var(--border);
   background:var(--card);
+  border-radius:22px 22px 0 0;
 }
 .modal-header h2{font-size:16px;font-weight:800;color:var(--text)}
 .modal-close{
@@ -885,11 +888,7 @@ tbody td{
 .modal-close svg{width:16px;height:16px}
 
 .modal-body{
-  flex:1;
-  overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
-  padding:14px 18px;
-  min-height:0;
+  padding:14px 18px 8px;
 }
 .modal-tabs{
   display:flex;
@@ -954,14 +953,14 @@ tbody td{
 .kategori-grid{
   display:grid;
   grid-template-columns:repeat(4,1fr);
-  gap:7px;
-  margin-bottom:12px;
+  gap:6px;
+  margin-bottom:10px;
   padding:2px;
 }
 .kategori-item{
   background:var(--surface);
-  border-radius:11px;
-  padding:9px 4px;
+  border-radius:10px;
+  padding:7px 3px;
   text-align:center;
   cursor:pointer;
   border:2px solid transparent;
@@ -973,18 +972,13 @@ tbody td{
   border-color:var(--primary-light);
   background:var(--surface-active);
 }
-.kategori-item .kat-icon{
-  display:block;
-  margin-bottom:4px;
-  line-height:1;
-  color:var(--text);
-}
-.kategori-item .kat-icon svg{width:18px;height:18px;stroke-width:2}
+.kategori-item .kat-icon{display:block;margin-bottom:3px;line-height:1;color:var(--text)}
+.kategori-item .kat-icon svg{width:16px;height:16px;stroke-width:2}
 .kategori-item .kat-name{
-  font-size:9.5px;
+  font-size:9px;
   font-weight:700;
   color:var(--text);
-  line-height:1.15;
+  line-height:1.1;
   word-break:break-word;
 }
 
@@ -1006,61 +1000,53 @@ tbody td{
 }
 
 .modal-footer{
-  flex-shrink:0;
   padding:12px 18px;
   padding-bottom:max(12px,env(safe-area-inset-bottom));
   border-top:1px solid var(--border);
   background:var(--card);
+  border-radius:0 0 22px 22px;
 }
 
 .amount-display{
   background:var(--surface);
-  border-radius:14px;
-  padding:10px 16px;
+  border-radius:13px;
+  padding:8px 14px;
   text-align:right;
-  margin-bottom:10px;
+  margin-bottom:8px;
   display:flex;
   flex-direction:column;
   justify-content:center;
 }
 .amount-label{
-  font-size:9.5px;
+  font-size:9px;
   color:var(--text-muted);
   font-weight:700;
   letter-spacing:.6px;
   text-align:right;
   margin-bottom:2px;
 }
-.amount-value{
-  display:flex;align-items:baseline;justify-content:flex-end;gap:6px;
-}
-.amount-currency{
-  font-size:13px;
-  font-weight:700;
-  color:var(--text-muted);
-}
+.amount-value{display:flex;align-items:baseline;justify-content:flex-end;gap:6px}
+.amount-currency{font-size:12px;font-weight:700;color:var(--text-muted)}
 .amount-number{
-  font-size:22px;
+  font-size:20px;
   font-weight:800;
   color:var(--primary-light);
   line-height:1;
   font-variant-numeric:tabular-nums;
   letter-spacing:-.5px;
 }
-[data-theme="dark"] .amount-number{color:var(--primary-lighter)}
-
 .numpad{
   display:grid;
   grid-template-columns:repeat(4,1fr);
-  gap:7px;
+  gap:6px;
   margin-bottom:10px;
 }
 .numpad button{
-  padding:12px 4px;
+  padding:10px 4px;
   background:var(--surface);
   border:none;
-  border-radius:11px;
-  font-size:16px;
+  border-radius:10px;
+  font-size:15px;
   font-weight:700;
   color:var(--text);
   cursor:pointer;
