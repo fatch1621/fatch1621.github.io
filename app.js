@@ -76,7 +76,9 @@ function hideSplash(){
 // Fallback: kalau Firebase tidak response, paksa hilang
 setTimeout(() => {
   if(!splashHidden){
-    console.warn('[Splash] Fallback timeout — memaksa splash hilang');
+    console.warn('[Splash] Fallback timeout — tampilkan login sebagai default');
+    // Tampilkan halaman login sebagai safe default
+    document.getElementById('auth-page').style.display = 'flex';
     hideSplash();
   }
 }, SPLASH_MAX_DURATION);
