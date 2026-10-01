@@ -311,7 +311,28 @@ onAuthStateChanged(auth, async (user) => {
     const userSnap = await getDoc(doc(db, 'users', user.uid));
     if(!userSnap.exists()){ await handleLegacyAccount(user); return; }
 
-    state.profile = userSnap.data();
+state.profile = userSnap.data();
+// Simpan ke localStorage
+try {
+  localStorage.setItem('cachedProfile', JSON.stringify(state.profile));
+}catch(e){
+  console.error(e);
+  // Fallback: pakai cache kalau ada
+  try {
+    const cached = localStorage.getItem('cachedProfile');
+    if(cached){
+      state.profile = JSON.parse(cached);
+      console.log('[Auth] Menggunakan cache profile');
+      renderAll();
+      refreshIcons();
+      hideSplash();
+      toast('Menampilkan data cache — cek koneksi internet.', 'warn');
+      return;
+    }
+  } catch(err){}
+  toast('Error: ' + e.message, 'error');
+  hideSplash();
+}
 
     if(state.profile.role === 'removed'){
       authPage.style.display = 'none';
@@ -845,7 +866,26 @@ document.getElementById('btn-save-ws-name').addEventListener('click', async () =
 // PROFIL
 // =========================================================
 function renderProfil(){
-  if(!state.profile) return;
+  if(!state.profile){
+    const page = document.getElementById('page-profil');
+    if(page){
+      page.innerHTML = `
+        <div class="card">
+          <div class="empty">
+            <i data-feather="alert-circle" style="width:48px;height:48px;opacity:.5;color:var(--primary-light)"></i>
+            <br><strong>Gagal memuat profil</strong>
+            <br><span style="font-size:12px;color:var(--text-muted)">Koneksi ke server sedang bermasalah.</span>
+            <br><br>
+            <button class="btn btn-primary" onclick="location.reload()">
+              <i data-feather="refresh-cw" style="width:16px;height:16px"></i> Coba Lagi
+            </button>
+          </div>
+        </div>
+      `;
+      refreshIcons();
+    }
+    return;
+  }
   document.getElementById('profileAvatar').textContent = (state.profile.username||'?')[0].toUpperCase();
   document.getElementById('profileUsername').textContent = state.profile.username || '-';
   document.getElementById('profileEmail').textContent = state.profile.email || '-';
@@ -1244,6 +1284,23 @@ function getFilteredRows(){
   return rows.sort((a,b)=>(a.Tanggal||'').localeCompare(b.Tanggal||''));
 }
 function renderPreview(){
+  if(!state.profile){
+    const page = document.getElementById('page-laporan');
+    const previewBox = document.getElementById('tablePreview');
+    if(previewBox){
+      previewBox.innerHTML = `
+        <div class="empty">
+          <i data-feather="alert-circle" style="width:40px;height:40px;opacity:.5;color:var(--primary-light)"></i>
+          <br><strong>Gagal memuat data</strong>
+          <br><span style="font-size:12px;color:var(--text-muted)">Koneksi ke server bermasalah.</span>
+          <br><br>
+          <button class="btn btn-primary btn-sm" onclick="location.reload()">Coba Lagi</button>
+        </div>
+      `;
+      refreshIcons();
+    }
+    return;
+  }
   const rows=getFilteredRows();
   document.getElementById('countPreview').textContent=rows.length;
   const box=document.getElementById('tablePreview');
