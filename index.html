@@ -5,28 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>KeuanganKu</title>
 
-<!-- PWA Meta Tags -->
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#3B2A20">
-<meta name="description" content="Aplikasi manajemen keuangan pribadi">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="KeuanganKu">
 <link rel="icon" type="image/png" href="foto1.png">
-<link rel="shortcut icon" type="image/png" href="foto1.png">
-<link rel="apple-touch-icon" href="foto1.png">
-<link rel="mask-icon" href="foto1.png" color="#3B2A20">
-<meta name="mobile-web-app-capable" content="yes">
+<meta name="description" content="Aplikasi manajemen keuangan pribadi">
+<meta name="theme-color" content="#3B2A20">
 
-<!-- Font: Plus Jakarta Sans -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<!-- Feather Icons -->
 <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.2/dist/feather.min.js"></script>
 
-<!-- Library -->
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -41,12 +29,20 @@
     <p class="splash-subtitle">Smart Money Manager</p>
   </div>
 </div>
-  
+<script>
+// FIX DARURAT: Force hide splash setelah 5 detik kalau app.js gagal
+setTimeout(function(){
+  var s = document.getElementById('splash-screen');
+  if(s && s.parentNode){ s.style.display = 'none'; }
+  var a = document.getElementById('auth-page');
+  if(a && a.style.display === 'none'){ a.style.display = 'flex'; }
+}, 5000);
+</script>
+
 <!-- ============ HALAMAN LOGIN ============ -->
 <div id="auth-page" class="auth-page" style="display:none">
   <div class="auth-card">
     <img src="foto1.png" alt="Logo" class="auth-logo-img">
-    
     <div id="login-form">
       <input type="text" id="login-username" placeholder="Username" autocomplete="username" autocapitalize="off" autocorrect="off">
       <input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
@@ -55,7 +51,6 @@
       <p class="auth-note">Only 2 People Can Login This Site</p>
       <a href="#" class="auth-toggle" id="toggle-to-register">Belum punya akun? <strong>Daftar</strong></a>
     </div>
-    
     <div id="register-form" style="display:none">
       <input type="text" id="reg-username" placeholder="Username" autocomplete="username" autocapitalize="off" autocorrect="off">
       <input type="email" id="reg-email" placeholder="Email" autocomplete="email">
@@ -80,7 +75,6 @@
 
 <!-- ============ APP ============ -->
 <div class="layout" id="app-layout" style="display:none">
-
   <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
   <aside class="sidebar" id="sidebar">
@@ -99,7 +93,9 @@
       <button data-page="budgeting"><i data-feather="briefcase" class="ico"></i> Budgeting</button>
       <button data-page="anggota"><i data-feather="users" class="ico"></i> Anggota</button>
       <div class="nav-section">AKUN</div>
+      <button data-page="profil"><i data-feather="user" class="ico"></i> Profil Saya</button>
       <div class="nav-section">REPORT</div>
+      <button data-page="laporan"><i data-feather="file-text" class="ico"></i> Laporan & Export</button>
     </nav>
     <button id="btn-logout" class="btn-logout"><i data-feather="log-out" style="width:16px;height:16px"></i> Logout</button>
   </aside>
@@ -145,23 +141,11 @@
           <div class="stat-sub" id="statPengeluaranSub">0 trx</div>
         </div>
       </div>
+      <div class="card"><div class="card-head"><h3>Pemasukan vs Pengeluaran</h3></div><div class="chart-box"><canvas id="chartBulanan"></canvas></div></div>
+      <div class="card"><div class="card-head"><h3>Pengeluaran per Kategori</h3></div><div class="chart-box sm"><canvas id="chartKatKeluar"></canvas></div></div>
+      <div class="card"><div class="card-head"><h3>Pemasukan per Kategori</h3></div><div class="chart-box sm"><canvas id="chartKatMasuk"></canvas></div></div>
       <div class="card">
-        <div class="card-head"><h3>Pemasukan vs Pengeluaran</h3></div>
-        <div class="chart-box"><canvas id="chartBulanan"></canvas></div>
-      </div>
-      <div class="card">
-        <div class="card-head"><h3>Pengeluaran per Kategori</h3></div>
-        <div class="chart-box sm"><canvas id="chartKatKeluar"></canvas></div>
-      </div>
-      <div class="card">
-        <div class="card-head"><h3>Pemasukan per Kategori</h3></div>
-        <div class="chart-box sm"><canvas id="chartKatMasuk"></canvas></div>
-      </div>
-      <div class="card">
-        <div class="card-head">
-          <h3>Transaksi Terbaru</h3>
-          <a href="#" class="link-more" id="link-ke-detail">Lihat semua →</a>
-        </div>
+        <div class="card-head"><h3>Transaksi Terbaru</h3><a href="#" class="link-more" id="link-ke-detail">Lihat semua →</a></div>
         <div id="recentTable"></div>
       </div>
     </section>
@@ -173,14 +157,8 @@
         <button class="chip" data-dfilter="masuk">Masuk</button>
         <button class="chip" data-dfilter="keluar">Keluar</button>
       </div>
-      <div class="search-box">
-        <i data-feather="search" class="search-ico"></i>
-        <input type="text" id="detail-search" placeholder="Cari keterangan / kategori...">
-      </div>
-      <div class="card">
-        <div class="card-head"><h3>Detail Transaksi <span class="badge" id="countDetail">0</span></h3></div>
-        <div id="detailList"></div>
-      </div>
+      <div class="search-box"><i data-feather="search" class="search-ico"></i><input type="text" id="detail-search" placeholder="Cari keterangan / kategori..."></div>
+      <div class="card"><div class="card-head"><h3>Detail Transaksi <span class="badge" id="countDetail">0</span></h3></div><div id="detailList"></div></div>
     </section>
 
     <!-- PEMASUKAN -->
@@ -191,17 +169,13 @@
           <div class="field"><label>Tanggal <span class="req">*</span></label><input type="date" id="inTanggal"><div class="error-msg" id="err-inTanggal"></div></div>
           <div class="field"><label>Sumber <span class="req">*</span></label><input type="text" id="inKegunaan" placeholder="cth: PT ABC / Klien" maxlength="80"><div class="error-msg" id="err-inKegunaan"></div></div>
           <div class="field"><label>Kategori <span class="req">*</span></label><select id="inKategori"></select><div class="error-msg" id="err-inKategori"></div></div>
+          <div class="field"><label>Dompet</label><select id="inDompet"><option value="">-- Tanpa Dompet --</option></select><div class="field-hint">Otomatis terisi dari kategori, bisa diubah.</div></div>
           <div class="field"><label>Jumlah (Rp) <span class="req">*</span></label><input type="number" id="inJumlah" placeholder="cth: 5000000" min="1" step="any"><div class="error-msg" id="err-inJumlah"></div></div>
           <div class="field"><label>Deskripsi (opsional)</label><textarea id="inDeskripsi" placeholder="Catatan tambahan..." maxlength="250"></textarea></div>
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primary btn-block"><i data-feather="save" style="width:16px;height:16px"></i> Simpan Pemasukan</button>
-          </div>
+          <div class="form-actions"><button type="submit" class="btn btn-primary btn-block"><i data-feather="save" style="width:16px;height:16px"></i> Simpan Pemasukan</button></div>
         </form>
       </div>
-      <div class="card">
-        <div class="card-head"><h3>Riwayat Pemasukan <span class="badge" id="countPemasukan">0</span></h3></div>
-        <div id="tablePemasukan"></div>
-      </div>
+      <div class="card"><div class="card-head"><h3>Riwayat Pemasukan <span class="badge" id="countPemasukan">0</span></h3></div><div id="tablePemasukan"></div></div>
     </section>
 
     <!-- PENGELUARAN -->
@@ -212,36 +186,55 @@
           <div class="field"><label>Tanggal <span class="req">*</span></label><input type="date" id="outTanggal"><div class="error-msg" id="err-outTanggal"></div></div>
           <div class="field"><label>Kegunaan <span class="req">*</span></label><input type="text" id="outSumber" placeholder="cth: Beli Sembako" maxlength="80"><div class="error-msg" id="err-outSumber"></div></div>
           <div class="field"><label>Kategori <span class="req">*</span></label><select id="outKategori"></select><div class="error-msg" id="err-outKategori"></div></div>
+          <div class="field"><label>Dompet</label><select id="outDompet"><option value="">-- Tanpa Dompet --</option></select><div class="field-hint">Otomatis terisi dari kategori, bisa diubah.</div></div>
           <div class="field"><label>Jumlah (Rp) <span class="req">*</span></label><input type="number" id="outJumlah" placeholder="cth: 150000" min="1" step="any"><div class="error-msg" id="err-outJumlah"></div></div>
           <div class="field"><label>Deskripsi (opsional)</label><textarea id="outDeskripsi" placeholder="Catatan tambahan..." maxlength="250"></textarea></div>
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primary btn-block"><i data-feather="save" style="width:16px;height:16px"></i> Simpan Pengeluaran</button>
-          </div>
+          <div class="form-actions"><button type="submit" class="btn btn-primary btn-block"><i data-feather="save" style="width:16px;height:16px"></i> Simpan Pengeluaran</button></div>
         </form>
       </div>
-      <div class="card">
-        <div class="card-head"><h3>Riwayat Pengeluaran <span class="badge" id="countPengeluaran">0</span></h3></div>
-        <div id="tablePengeluaran"></div>
-      </div>
+      <div class="card"><div class="card-head"><h3>Riwayat Pengeluaran <span class="badge" id="countPengeluaran">0</span></h3></div><div id="tablePengeluaran"></div></div>
     </section>
 
     <!-- KATEGORI -->
     <section class="page" id="page-kategori">
-      <div class="card">
-        <div class="card-head"><h3>Kategori Pemasukan</h3></div>
-        <form class="kat-form" id="formKatMasuk">
-          <input type="text" id="inputKatMasuk" placeholder="Nama kategori baru..." maxlength="40">
-          <button type="submit" class="btn btn-primary btn-sm">Tambah</button>
-        </form>
+      <div class="card"><div class="card-head"><h3>Kategori Pemasukan</h3></div>
+        <form class="kat-form" id="formKatMasuk"><input type="text" id="inputKatMasuk" placeholder="Nama kategori baru..." maxlength="40"><button type="submit" class="btn btn-primary btn-sm">Tambah</button></form>
         <div class="kat-list" id="listKatMasuk"></div>
       </div>
-      <div class="card">
-        <div class="card-head"><h3>Kategori Pengeluaran</h3></div>
-        <form class="kat-form" id="formKatKeluar">
-          <input type="text" id="inputKatKeluar" placeholder="Nama kategori baru..." maxlength="40">
-          <button type="submit" class="btn btn-primary btn-sm">Tambah</button>
-        </form>
+      <div class="card"><div class="card-head"><h3>Kategori Pengeluaran</h3></div>
+        <form class="kat-form" id="formKatKeluar"><input type="text" id="inputKatKeluar" placeholder="Nama kategori baru..." maxlength="40"><button type="submit" class="btn btn-primary btn-sm">Tambah</button></form>
         <div class="kat-list" id="listKatKeluar"></div>
+      </div>
+    </section>
+
+    <!-- BUDGETING -->
+    <section class="page" id="page-budgeting">
+      <div class="card">
+        <div class="card-head"><h3>Budgeting</h3></div>
+        <div class="budget-tabs" id="budgeting-tabs">
+          <button class="budget-tab active" data-btab="wallets"><i data-feather="briefcase" style="width:14px;height:14px"></i> Dompet</button>
+          <button class="budget-tab" data-btab="alokasi"><i data-feather="pie-chart" style="width:14px;height:14px"></i> Alokasi</button>
+          <button class="budget-tab" data-btab="progress"><i data-feather="activity" style="width:14px;height:14px"></i> Progress</button>
+          <button class="budget-tab" data-btab="laporan"><i data-feather="bar-chart-2" style="width:14px;height:14px"></i> Laporan</button>
+        </div>
+      </div>
+      <div class="budgeting-panel active" data-btab="wallets">
+        <div class="card">
+          <div class="card-head">
+            <h3>Daftar Dompet</h3>
+            <button class="btn btn-primary btn-sm" id="btn-add-wallet"><i data-feather="plus" style="width:14px;height:14px"></i> Tambah Dompet</button>
+          </div>
+          <div id="wallet-list"><div class="empty">Memuat dompet...</div></div>
+        </div>
+      </div>
+      <div class="budgeting-panel" data-btab="alokasi">
+        <div class="card"><div class="card-head"><h3>Alokasi Budget</h3></div><div class="empty">Fitur Alokasi akan hadir di Fase 4.</div></div>
+      </div>
+      <div class="budgeting-panel" data-btab="progress">
+        <div class="card"><div class="card-head"><h3>Progress Budget</h3></div><div class="empty">Fitur Progress akan hadir di Fase 3.</div></div>
+      </div>
+      <div class="budgeting-panel" data-btab="laporan">
+        <div class="card"><div class="card-head"><h3>Laporan Budget</h3></div><div class="empty">Fitur Laporan akan hadir di Fase 3.</div></div>
       </div>
     </section>
 
@@ -249,138 +242,18 @@
     <section class="page" id="page-anggota">
       <div class="card">
         <div class="card-head"><h3>Workspace</h3></div>
-        <div class="field">
-          <label>Nama Workspace</label>
-          <div style="display:flex;gap:8px">
-            <input type="text" id="ws-name-input" placeholder="Nama workspace">
-            <button class="btn btn-primary btn-sm" id="btn-save-ws-name" style="white-space:nowrap">Simpan</button>
-          </div>
+        <div class="field"><label>Nama Workspace</label>
+          <div style="display:flex;gap:8px"><input type="text" id="ws-name-input" placeholder="Nama workspace"><button class="btn btn-primary btn-sm" id="btn-save-ws-name" style="white-space:nowrap">Simpan</button></div>
         </div>
       </div>
-      <div class="card">
-        <div class="card-head"><h3>Daftar Anggota <span class="badge" id="countAnggota">0</span></h3></div>
-        <div id="anggotaList"></div>
-      </div>
-    </section>
-    <!-- BUDGETING -->
-    <section class="page" id="page-budgeting">
-      <div class="card">
-        <div class="card-head">
-          <h3>💼 Budgeting</h3>
-        </div>
-        <div class="budget-tabs" id="budgeting-tabs">
-          <button class="budget-tab active" data-btab="wallets">
-            <i data-feather="briefcase" style="width:14px;height:14px"></i> Dompet
-          </button>
-          <button class="budget-tab" data-btab="alokasi">
-            <i data-feather="pie-chart" style="width:14px;height:14px"></i> Alokasi
-          </button>
-          <button class="budget-tab" data-btab="progress">
-            <i data-feather="activity" style="width:14px;height:14px"></i> Progress
-          </button>
-          <button class="budget-tab" data-btab="laporan">
-            <i data-feather="bar-chart-2" style="width:14px;height:14px"></i> Laporan
-          </button>
-        </div>
-      </div>
-
-      <!-- Panel: Dompet -->
-      <div class="budgeting-panel active" data-btab="wallets">
-        <div class="card">
-          <div class="card-head">
-            <h3>Daftar Dompet</h3>
-            <button class="btn btn-primary btn-sm" id="btn-add-wallet">
-              <i data-feather="plus" style="width:14px;height:14px"></i> Tambah Dompet
-            </button>
-          </div>
-          <div id="wallet-list">
-            <div class="empty">
-              <i data-feather="briefcase" style="width:40px;height:40px;opacity:.4"></i>
-              <br>Memuat dompet...
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Panel: Alokasi (placeholder) -->
-      <div class="budgeting-panel" data-btab="alokasi">
-        <div class="card">
-          <div class="card-head"><h3>📊 Alokasi Budget</h3></div>
-          <div class="empty">
-            <i data-feather="pie-chart" style="width:40px;height:40px;opacity:.4"></i>
-            <br>Fitur Alokasi akan hadir di Fase 2.
-          </div>
-        </div>
-      </div>
-
-      <!-- Panel: Progress (placeholder) -->
-      <div class="budgeting-panel" data-btab="progress">
-        <div class="card">
-          <div class="card-head"><h3>📈 Progress Budget</h3></div>
-          <div class="empty">
-            <i data-feather="activity" style="width:40px;height:40px;opacity:.4"></i>
-            <br>Fitur Progress akan hadir di Fase 3.
-          </div>
-        </div>
-      </div>
-
-      <!-- Panel: Laporan (placeholder) -->
-      <div class="budgeting-panel" data-btab="laporan">
-        <div class="card">
-          <div class="card-head"><h3>📊 Laporan Budget</h3></div>
-          <div class="empty">
-            <i data-feather="bar-chart-2" style="width:40px;height:40px;opacity:.4"></i>
-            <br>Fitur Laporan akan hadir di Fase 3.
-          </div>
-        </div>
-      </div>
+      <div class="card"><div class="card-head"><h3>Daftar Anggota <span class="badge" id="countAnggota">0</span></h3></div><div id="anggotaList"></div></div>
     </section>
 
-    <!-- ANGGOTA -->
-    <section class="page" id="page-anggota">
     <!-- PROFIL -->
-    <section class="page" id="page-profil">
-      <div class="card">
-        <div class="card-head"><h3>Profil Saya</h3></div>
-        <div class="profile-header">
-          <div class="profile-avatar" id="profileAvatar">?</div>
-          <div style="flex:1;min-width:0">
-            <div class="profile-username" id="profileUsername">-</div>
-            <div class="profile-email" id="profileEmail">-</div>
-            <span class="member-role" id="profileRole">-</span>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-head"><h3>Keamanan Akun</h3></div>
-        <button class="menu-btn" id="btn-ubah-username"><span><i data-feather="edit-2" style="width:16px;height:16px;margin-right:8px"></i> Ubah Username</span><span>›</span></button>
-        <button class="menu-btn" id="btn-ubah-email"><span><i data-feather="mail" style="width:16px;height:16px;margin-right:8px"></i> Ubah Email</span><span>›</span></button>
-        <button class="menu-btn" id="btn-ubah-password"><span><i data-feather="key" style="width:16px;height:16px;margin-right:8px"></i> Ubah Password</span><span>›</span></button>
-      </div>
-      <div class="card danger-zone">
-        <div class="card-head"><h3>Zona Bahaya</h3></div>
-        <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px;line-height:1.5">Setelah akun dihapus, kamu tidak bisa login lagi. Transaksi lama tetap tersimpan dengan nama username-mu.</p>
-        <button class="btn btn-danger btn-block" id="btn-hapus-akun"><i data-feather="trash-2" style="width:16px;height:16px"></i> Hapus Akun Saya</button>
-      </div>
-    </section>
+    <section class="page" id="page-profil"></section>
 
     <!-- LAPORAN -->
-    <section class="page" id="page-laporan">
-      <div class="card">
-        <div class="card-head"><h3>Filter Laporan</h3></div>
-        <div class="field"><label>Jenis Transaksi</label><select id="expJenis"><option value="semua">Semua Transaksi</option><option value="pemasukan">Pemasukan saja</option><option value="pengeluaran">Pengeluaran saja</option></select></div>
-        <div class="field"><label>Dari Tanggal</label><input type="date" id="expDari"></div>
-        <div class="field"><label>Sampai Tanggal</label><input type="date" id="expSampai"></div>
-        <div class="form-actions" style="flex-direction:column">
-          <button class="btn btn-ghost btn-block" id="btnPreview"><i data-feather="search" style="width:16px;height:16px"></i> Tampilkan Preview</button>
-          <button class="btn btn-primary btn-block" id="btnExport"><i data-feather="download" style="width:16px;height:16px"></i> Export ke Excel</button>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-head"><h3>Preview <span class="badge" id="countPreview">0</span></h3></div>
-        <div id="tablePreview"></div>
-      </div>
-    </section>
+    <section class="page" id="page-laporan"></section>
 
   </main>
 
@@ -389,44 +262,37 @@
     <button data-page="pemasukan"><i data-feather="download" class="bn-ico"></i><span class="bn-label">Masuk</span></button>
     <button data-page="detail"><i data-feather="file-text" class="bn-ico"></i><span class="bn-label">Detail</span></button>
     <button data-page="pengeluaran"><i data-feather="upload" class="bn-ico"></i><span class="bn-label">Keluar</span></button>
-
+    <button data-page="laporan"><i data-feather="file-text" class="bn-ico"></i><span class="bn-label">Laporan</span></button>
   </nav>
 </div>
 
 <!-- ============ MODAL ENTRY ============ -->
 <div class="modal-overlay" id="modal-entry" style="display:none">
   <div class="modal">
-    <div class="modal-header">
-      <h2>Entry Data</h2>
-      <button class="modal-close" id="modal-close"><i data-feather="x"></i></button>
-    </div>
+    <div class="modal-header"><h2>Entry Data</h2><button class="modal-close" id="modal-close"><i data-feather="x"></i></button></div>
     <div class="modal-body">
       <div class="modal-tabs" id="modal-tabs">
         <button data-tab="expense" class="active">Pengeluaran</button>
         <button data-tab="income">Pemasukan</button>
       </div>
-      <div class="kategori-header">
-        <label>KATEGORI</label>
-        <a href="#" class="link-kategori" id="link-atur-kategori">Atur →</a>
-      </div>
-      <div class="search-box">
-        <i data-feather="search" class="search-ico"></i>
-        <input type="text" class="search-kategori" id="search-kategori" placeholder="Cari kategori...">
-      </div>
+      <div class="kategori-header"><label>KATEGORI</label><a href="#" class="link-kategori" id="link-atur-kategori">Atur →</a></div>
+      <div class="search-box"><i data-feather="search" class="search-ico"></i><input type="text" class="search-kategori" id="search-kategori" placeholder="Cari kategori..."></div>
       <div class="kategori-grid" id="kategori-grid"></div>
       <div class="entry-fields">
         <div class="field"><label>Tanggal <span class="req">*</span></label><input type="date" id="entry-tanggal"></div>
         <div class="field"><label id="entry-label-kegunaan">Kegunaan <span class="req">*</span></label><input type="text" id="entry-kegunaan" placeholder="cth: Beli Sembako" maxlength="80"></div>
+        <div class="field">
+          <label>Dompet</label>
+          <select id="entry-dompet"><option value="">-- Tanpa Dompet --</option></select>
+          <div class="field-hint" id="entry-dompet-info" style="display:none"></div>
+        </div>
         <div class="field"><label>Deskripsi</label><input type="text" id="entry-deskripsi" placeholder="Opsional..." maxlength="120"></div>
       </div>
     </div>
     <div class="modal-footer">
       <div class="amount-display">
         <div class="amount-label">JUMLAH</div>
-        <div class="amount-value">
-          <span class="amount-currency">Rp</span>
-          <span class="amount-number" id="amount-number">0</span>
-        </div>
+        <div class="amount-value"><span class="amount-currency">Rp</span><span class="amount-number" id="amount-number">0</span></div>
       </div>
       <div class="numpad">
         <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button><button data-key="÷" class="op">÷</button>
@@ -442,30 +308,22 @@
 <!-- ============ MODAL UBAH USERNAME ============ -->
 <div class="modal-overlay" id="modal-username" style="display:none">
   <div class="modal modal-small">
-    <div class="modal-header">
-      <h2>Ubah Username</h2>
-      <button class="modal-close" onclick="document.getElementById('modal-username').style.display='none';document.body.style.overflow=''"><i data-feather="x"></i></button>
-    </div>
+    <div class="modal-header"><h2>Ubah Username</h2><button class="modal-close" id="modal-username-close"><i data-feather="x"></i></button></div>
     <div class="modal-body">
-      <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px">Username digunakan untuk login. Transaksi lama tetap tersimpan dengan username lama.</p>
+      <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px">Username digunakan untuk login.</p>
       <div class="field"><label>Username Baru</label><input type="text" id="new-username" placeholder="Username baru" autocapitalize="off" autocorrect="off"></div>
       <div class="error-msg" id="err-username"></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn-save-entry" id="btn-save-username">Simpan Username</button>
-    </div>
+    <div class="modal-footer"><button class="btn-save-entry" id="btn-save-username">Simpan Username</button></div>
   </div>
 </div>
 
 <!-- ============ MODAL UBAH EMAIL ============ -->
 <div class="modal-overlay" id="modal-email" style="display:none">
   <div class="modal modal-small">
-    <div class="modal-header">
-      <h2>Ubah Email</h2>
-      <button class="modal-close" onclick="document.getElementById('modal-email').style.display='none';document.body.style.overflow=''"><i data-feather="x"></i></button>
-    </div>
+    <div class="modal-header"><h2>Ubah Email</h2><button class="modal-close" id="modal-email-close"><i data-feather="x"></i></button></div>
     <div class="modal-body">
-      <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px">Kami akan kirim link verifikasi ke email baru. Klik link tersebut untuk konfirmasi.</p>
+      <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px">Kami akan kirim link verifikasi ke email baru.</p>
       <div class="field"><label>Email Baru</label><input type="email" id="new-email" placeholder="email@baru.com"></div>
       <div class="field"><label>Password Saat Ini</label><input type="password" id="email-password" placeholder="Untuk verifikasi"></div>
       <div class="error-msg" id="err-email"></div>
@@ -477,10 +335,7 @@
 <!-- ============ MODAL UBAH PASSWORD ============ -->
 <div class="modal-overlay" id="modal-password" style="display:none">
   <div class="modal modal-small">
-    <div class="modal-header">
-      <h2>Ubah Password</h2>
-      <button class="modal-close" onclick="document.getElementById('modal-password').style.display='none';document.body.style.overflow=''"><i data-feather="x"></i></button>
-    </div>
+    <div class="modal-header"><h2>Ubah Password</h2><button class="modal-close" id="modal-password-close"><i data-feather="x"></i></button></div>
     <div class="modal-body">
       <div class="field"><label>Password Saat Ini</label><input type="password" id="old-password" placeholder="Password lama"></div>
       <div class="field"><label>Password Baru</label><input type="password" id="new-password" placeholder="Minimal 6 karakter"></div>
@@ -494,40 +349,26 @@
 <!-- ============ MODAL HAPUS AKUN ============ -->
 <div class="modal-overlay" id="modal-hapus" style="display:none">
   <div class="modal modal-small">
-    <div class="modal-header">
-      <h2 style="color:#b91c1c">Hapus Akun</h2>
-      <button class="modal-close" onclick="document.getElementById('modal-hapus').style.display='none';document.body.style.overflow=''"><i data-feather="x"></i></button>
-    </div>
+    <div class="modal-header"><h2 style="color:#b91c1c">Hapus Akun</h2><button class="modal-close" id="modal-hapus-close"><i data-feather="x"></i></button></div>
     <div class="modal-body">
       <p style="font-size:12.5px;color:#b91c1c;font-weight:600;margin-bottom:8px">PERINGATAN: Aksi ini tidak bisa dibatalkan!</p>
-      <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px;line-height:1.5">Setelah dihapus, kamu tidak bisa login lagi dengan username ini. Transaksi yang sudah pernah kamu buat akan tetap tersimpan (dengan label username lama).</p>
+      <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px;line-height:1.5">Setelah dihapus, kamu tidak bisa login lagi dengan username ini.</p>
       <div class="field"><label>Ketik <strong>HAPUS</strong> untuk konfirmasi</label><input type="text" id="confirm-delete-text" placeholder="HAPUS" autocapitalize="characters" autocorrect="off"></div>
       <div class="field"><label>Password Kamu</label><input type="password" id="delete-password" placeholder="Password saat ini"></div>
       <div class="error-msg" id="err-hapus"></div>
     </div>
-    <div class="modal-footer"><button class="btn-save-entry btn-danger-solid" id="btn-confirm-hapus">Hapus Akun Permanen</button></div>
+    <div class="modal-footer"><button class="btn-save-entry btn-danger-solid" id="btn-confirm-hapus" style="background:#b91c1c">Hapus Akun Permanen</button></div>
   </div>
 </div>
-<!-- ============ MODAL WALLET (Tambah/Edit Dompet) ============ -->
+
+<!-- ============ MODAL WALLET ============ -->
 <div class="modal-overlay" id="modal-wallet" style="display:none">
   <div class="modal">
-    <div class="modal-header">
-      <h2 id="wallet-modal-title">Tambah Dompet</h2>
-      <button class="modal-close" id="modal-wallet-close"><i data-feather="x"></i></button>
-    </div>
+    <div class="modal-header"><h2 id="wallet-modal-title">Tambah Dompet</h2><button class="modal-close" id="modal-wallet-close"><i data-feather="x"></i></button></div>
     <div class="modal-body">
-      <div class="field">
-        <label>Nama Dompet <span class="req">*</span></label>
-        <input type="text" id="wallet-name" placeholder="cth: Kebutuhan Utama" maxlength="40">
-      </div>
-
-      <div class="field">
-        <label>Deskripsi</label>
-        <input type="text" id="wallet-description" placeholder="cth: Makan, transport, tagihan" maxlength="100">
-      </div>
-
-      <div class="field">
-        <label>Warna</label>
+      <div class="field"><label>Nama Dompet <span class="req">*</span></label><input type="text" id="wallet-name" placeholder="cth: Kebutuhan Utama" maxlength="40"></div>
+      <div class="field"><label>Deskripsi</label><input type="text" id="wallet-description" placeholder="cth: Makan, transport, tagihan" maxlength="100"></div>
+      <div class="field"><label>Warna</label>
         <div class="color-picker" id="wallet-color-picker">
           <button type="button" class="color-opt selected" data-color="#3B2A20" style="background:#3B2A20"></button>
           <button type="button" class="color-opt" data-color="#7B5E4A" style="background:#7B5E4A"></button>
@@ -537,39 +378,20 @@
           <button type="button" class="color-opt" data-color="#D1B89A" style="background:#D1B89A"></button>
         </div>
       </div>
-
-      <div class="field">
-        <label>Budget (Rp) <span class="req">*</span></label>
-        <input type="number" id="wallet-budget" placeholder="cth: 3000000" min="0" step="any">
-      </div>
-
-      <div class="field">
-        <label>Periode</label>
-        <select id="wallet-period">
-          <option value="monthly">Bulanan</option>
-          <option value="weekly">Mingguan</option>
-        </select>
-      </div>
-
-      <div class="field">
-        <label>Prioritas</label>
+      <div class="field"><label>Budget (Rp) <span class="req">*</span></label><input type="number" id="wallet-budget" placeholder="cth: 3000000" min="0" step="any"></div>
+      <div class="field"><label>Periode</label><select id="wallet-period"><option value="monthly">Bulanan</option><option value="weekly">Mingguan</option></select></div>
+      <div class="field"><label>Prioritas</label>
         <select id="wallet-priority">
-          <option value="1">🥇 Kebutuhan Utama</option>
-          <option value="2">🥈 Kebutuhan Sekunder</option>
-          <option value="3">🥉 Keinginan</option>
-          <option value="4">💰 Tabungan</option>
-          <option value="5">💳 Utang</option>
+          <option value="1">Kebutuhan Utama</option>
+          <option value="2">Kebutuhan Sekunder</option>
+          <option value="3">Keinginan</option>
+          <option value="4">Tabungan</option>
+          <option value="5">Utang</option>
         </select>
       </div>
-
       <div class="field">
-        <label class="switch-label">
-          <input type="checkbox" id="wallet-rollover">
-          <span>Roll-over surplus ke bulan berikutnya</span>
-        </label>
-        <div class="field-hint">Kalau aktif, sisa budget bulan ini akan ditambah ke budget bulan depan.</div>
+        <label class="switch-label"><input type="checkbox" id="wallet-rollover"><span>Roll-over surplus ke bulan berikutnya</span></label>
       </div>
-
       <div class="field">
         <label>Kategori Terkait</label>
         <div class="field-hint" style="margin-bottom:8px">Pilih kategori yang termasuk dalam dompet ini.</div>
@@ -585,8 +407,6 @@
   </div>
 </div>
 
-<div id="toastBox"></div>
-<script type="module" src="app.js"></script>
 <div id="toastBox"></div>
 <script type="module" src="app.js"></script>
 </body>
