@@ -1405,3 +1405,5 @@ if ('serviceWorker' in navigator) {
 // =========================================================
 initTheme();
 refreshIcons();
+
+// Force rebuild 2026-10-01
