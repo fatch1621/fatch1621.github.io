@@ -429,8 +429,24 @@ const PAGE_TITLES = {
   pengeluaran:'Pengeluaran', kategori:'Kategori', budgeting:'Budgeting',
   anggota:'Anggota', profil:'Profil Saya', laporan:'Laporan & Export'
 };
+// Auto-create section kalau tidak ada di HTML
+function ensurePageSection(page){
+  const pageId = 'page-' + page;
+  let section = document.getElementById(pageId);
+  if(!section){
+    const main = document.querySelector('main.main');
+    if(!main) return null;
+    section = document.createElement('section');
+    section.className = 'page';
+    section.id = pageId;
+    main.appendChild(section);
+    console.log('[AutoFix] Section dibuat otomatis:', pageId);
+  }
+  return section;
+}
 
 function goToPage(page){
+  ensurePageSection(page);
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
   document.querySelectorAll('#bottom-nav button[data-page]').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -854,7 +870,7 @@ document.getElementById('btn-save-ws-name').addEventListener('click', async () =
 // PROFIL (Rebuilt from JS)
 // =========================================================
 function renderProfil(){
-  const page = document.getElementById('page-profil');
+  const page = ensurePageSection('profil');
   if(!page) return;
 
   if(!state.profile){
@@ -1319,8 +1335,48 @@ function getFilteredRows(){
 }
 
 function renderPreview(){
-  const box = document.getElementById('tablePreview');
-  if(!box) return;
+  ensurePageSection('laporan');
+  let box = document.getElementById('tablePreview');
+  if(!box){
+    // Kalau tablePreview tidak ada, buat ulang seluruh section laporan
+    const page = document.getElementById('page-laporan');
+    if(!page) return;
+    page.innerHTML = `
+      <div class="card">
+        <div class="card-head"><h3>Filter Laporan</h3></div>
+        <div class="field"><label>Jenis Transaksi</label><select id="expJenis"><option value="semua">Semua Transaksi</option><option value="pemasukan">Pemasukan saja</option><option value="pengeluaran">Pengeluaran saja</option></select></div>
+        <div class="field"><label>Dari Tanggal</label><input type="date" id="expDari"></div>
+        <div class="field"><label>Sampai Tanggal</label><input type="date" id="expSampai"></div>
+        <div class="form-actions" style="flex-direction:column">
+          <button class="btn btn-ghost btn-block" id="btnPreview"><i data-feather="search" style="width:16px;height:16px"></i> Tampilkan Preview</button>
+          <button class="btn btn-primary btn-block" id="btnExport"><i data-feather="download" style="width:16px;height:16px"></i> Export ke Excel</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Preview <span class="badge" id="countPreview">0</span></h3></div>
+        <div id="tablePreview"></div>
+      </div>
+    `;
+    refreshIcons();
+    // Re-bind event listener
+    document.getElementById('btnPreview').addEventListener('click', renderPreview);
+    document.getElementById('btnExport').addEventListener('click', () => {
+      if(!state.profile){ toast('Data belum siap. Coba muat ulang.', 'error'); return; }
+      const rows = getFilteredRows();
+      if(!rows.length){ toast('Tidak ada data untuk diexport.','error'); return; }
+      try{
+        const aoa=[['Tanggal','Kegunaan','Kategori','Jumlah','Deskripsi']];
+        rows.forEach(r=>aoa.push([r.Tanggal,r.Kegunaan,r.Kategori,r.Jumlah,r.Deskripsi]));
+        const ws=XLSX.utils.aoa_to_sheet(aoa);
+        ws['!cols']=[{wch:13},{wch:28},{wch:20},{wch:16},{wch:36}];
+        const wb=XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb,ws,'Laporan');
+        XLSX.writeFile(wb,`Laporan_Keuangan_${todayISO()}.xlsx`);
+        toast(`Berhasil export ${rows.length} baris.`,'success');
+      }catch(e){ toast('Gagal export: '+e.message,'error'); }
+    });
+    box = document.getElementById('tablePreview');
+  }
 
   if(!state.profile){
     box.innerHTML = `
