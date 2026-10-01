@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, EmailAuthProvider, reauthenticateWithCredential, updatePassword, verifyBeforeUpdateEmail, deleteUser } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy, getDoc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
+import { initBudgeting, getWallets, getActiveWallets } from './budgeting.js';
 // ====== GANTI DENGAN CONFIG MILIKMU ======
 const firebaseConfig = {
   apiKey: "AIzaSyAnadqK4sTVRyIyoDEJJzhKPH1GNDZ4_kg",
@@ -334,9 +334,27 @@ onAuthStateChanged(auth, async (user) => {
     authPage.style.display = 'none';
     removedPage.style.display = 'none';
     appLayout.style.display = 'block';
-    renderAll();
+       renderAll();
     refreshIcons();
     toast(`Selamat datang, ${state.profile.username}!`, 'success');
+    hideSplash();
+
+    // ===== INIT BUDGETING =====
+    initBudgeting({
+      state: state,
+      db: db,
+      workspaceId: state.profile.workspaceId,
+      userId: state.user.uid,
+      utils: {
+        fmtRp: fmtRp,
+        fmtRpShort: fmtRpShort,
+        esc: esc,
+        todayISO: todayISO,
+        toast: toast,
+        refreshIcons: refreshIcons,
+        getKatIcon: getKatIcon
+      }
+    });
   }catch(e){
     console.error(e);
     toast('Error: ' + e.message, 'error');
@@ -410,8 +428,8 @@ overlay.addEventListener('click', closeSidebar);
 
 const PAGE_TITLES = {
   dashboard:'Dashboard', detail:'Detail Transaksi', pemasukan:'Pemasukan',
-  pengeluaran:'Pengeluaran', kategori:'Kategori', anggota:'Anggota',
-  profil:'Profil Saya', laporan:'Laporan & Export'
+  pengeluaran:'Pengeluaran', kategori:'Kategori', budgeting:'Budgeting',
+  anggota:'Anggota', profil:'Profil Saya', laporan:'Laporan & Export'
 };
 
 function goToPage(page){
