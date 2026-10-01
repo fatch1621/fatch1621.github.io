@@ -762,6 +762,7 @@ function renderAll(){
   renderDetail();
   renderAnggota();
   renderProfil();
+  renderPreview();
   refreshIcons();
 }
 
@@ -1335,12 +1336,13 @@ function getFilteredRows(){
 }
 
 function renderPreview(){
+  // Pastikan section ada
   ensurePageSection('laporan');
-  let box = document.getElementById('tablePreview');
-  if(!box){
-    // Kalau tablePreview tidak ada, buat ulang seluruh section laporan
-    const page = document.getElementById('page-laporan');
-    if(!page) return;
+  const page = document.getElementById('page-laporan');
+  if(!page) return;
+
+  // Kalau section kosong (belum ada filter), bangun dulu
+  if(!document.getElementById('tablePreview')){
     page.innerHTML = `
       <div class="card">
         <div class="card-head"><h3>Filter Laporan</h3></div>
@@ -1358,41 +1360,63 @@ function renderPreview(){
       </div>
     `;
     refreshIcons();
-    // Re-bind event listener
     document.getElementById('btnPreview').addEventListener('click', renderPreview);
-    document.getElementById('btnExport').addEventListener('click', () => {
-      if(!state.profile){ toast('Data belum siap. Coba muat ulang.', 'error'); return; }
-      const rows = getFilteredRows();
-      if(!rows.length){ toast('Tidak ada data untuk diexport.','error'); return; }
-      try{
-        const aoa=[['Tanggal','Kegunaan','Kategori','Jumlah','Deskripsi']];
-        rows.forEach(r=>aoa.push([r.Tanggal,r.Kegunaan,r.Kategori,r.Jumlah,r.Deskripsi]));
-        const ws=XLSX.utils.aoa_to_sheet(aoa);
-        ws['!cols']=[{wch:13},{wch:28},{wch:20},{wch:16},{wch:36}];
-        const wb=XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb,ws,'Laporan');
-        XLSX.writeFile(wb,`Laporan_Keuangan_${todayISO()}.xlsx`);
-        toast(`Berhasil export ${rows.length} baris.`,'success');
-      }catch(e){ toast('Gagal export: '+e.message,'error'); }
-    });
-    box = document.getElementById('tablePreview');
+    document.getElementById('btnExport').addEventListener('click', doExportExcel);
   }
 
+  const box = document.getElementById('tablePreview');
+
   if(!state.profile){
-    box.innerHTML = `
-      <div class="empty">
-        <i data-feather="alert-circle" style="width:40px;height:40px;opacity:.5;color:var(--primary-light)"></i>
-        <br><strong>Gagal memuat data</strong>
-        <br><span style="font-size:12px;color:var(--text-muted)">Koneksi ke server bermasalah. Coba muat ulang.</span>
-        <br><br>
-        <button class="btn btn-primary btn-sm" onclick="location.reload()">
-          <i data-feather="refresh-cw" style="width:14px;height:14px"></i> Coba Lagi
-        </button>
-      </div>
-    `;
+    box.innerHTML = `<div class="empty"><i data-feather="alert-circle" style="width:40px;height:40px;opacity:.5"></i><br><strong>Gagal memuat data</strong><br><span style="font-size:12px;color:var(--text-muted)">Koneksi bermasalah. Coba muat ulang.</span><br><br><button class="btn btn-primary btn-sm" onclick="location.reload()">Coba Lagi</button></div>`;
     refreshIcons();
     return;
   }
+
+  const rows = getFilteredRows();
+  const countEl = document.getElementById('countPreview');
+  if(countEl) countEl.textContent = rows.length;
+
+  if(!rows.length){
+    box.innerHTML = `<div class="empty"><i data-feather="file-text" style="width:40px;height:40px;opacity:.4"></i><br>Tidak ada data pada filter ini.</div>`;
+    refreshIcons();
+    return;
+  }
+
+  const total = rows.reduce((s,r)=>s+r.Jumlah,0);
+  box.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>Tanggal</th><th>Jenis</th><th>Keterangan</th><th>Kategori</th><th style="text-align:right">Jumlah</th></tr></thead>
+    <tbody>
+      ${rows.map(r=>`<tr>
+        <td style="white-space:nowrap">${fmtTanggal(r.Tanggal)}</td>
+        <td>${r._tipe==='Pemasukan'?'<span class="badge">Masuk</span>':'<span class="badge" style="background:var(--red-light);color:var(--red-dark)">Keluar</span>'}</td>
+        <td>${esc(r.Kegunaan)}</td>
+        <td>${esc(r.Kategori)}</td>
+        <td class="num ${r._tipe==='Pemasukan'?'in':'out'}">${fmtRp(r.Jumlah)}</td>
+      </tr>`).join('')}
+      <tr style="background:var(--surface);font-weight:700">
+        <td colspan="4" style="text-align:right">TOTAL</td>
+        <td class="num">${fmtRp(total)}</td>
+      </tr>
+    </tbody>
+  </table></div>`;
+}
+
+// Fungsi export terpisah biar bisa dipanggil dari mana saja
+function doExportExcel(){
+  if(!state.profile){ toast('Data belum siap. Coba muat ulang.', 'error'); return; }
+  const rows = getFilteredRows();
+  if(!rows.length){ toast('Tidak ada data untuk diexport.','error'); return; }
+  try{
+    const aoa=[['Tanggal','Kegunaan','Kategori','Jumlah','Deskripsi']];
+    rows.forEach(r=>aoa.push([r.Tanggal,r.Kegunaan,r.Kategori,r.Jumlah,r.Deskripsi]));
+    const ws=XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols']=[{wch:13},{wch:28},{wch:20},{wch:16},{wch:36}];
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Laporan');
+    XLSX.writeFile(wb,`Laporan_Keuangan_${todayISO()}.xlsx`);
+    toast(`Berhasil export ${rows.length} baris.`,'success');
+  }catch(e){ toast('Gagal export: '+e.message,'error'); }
+}
 
   const rows = getFilteredRows();
   const countEl = document.getElementById('countPreview');
@@ -1421,22 +1445,6 @@ function renderPreview(){
     </tbody>
   </table></div>`;
 }
-document.getElementById('btnPreview').addEventListener('click',renderPreview);
-document.getElementById('btnExport').addEventListener('click',()=>{
-  if(!state.profile){ toast('Data belum siap. Coba muat ulang.', 'error'); return; }
-  const rows=getFilteredRows();
-  if(!rows.length){ toast('Tidak ada data untuk diexport.','error'); return; }
-  try{
-    const aoa=[['Tanggal','Kegunaan','Kategori','Jumlah','Deskripsi']];
-    rows.forEach(r=>aoa.push([r.Tanggal,r.Kegunaan,r.Kategori,r.Jumlah,r.Deskripsi]));
-    const ws=XLSX.utils.aoa_to_sheet(aoa);
-    ws['!cols']=[{wch:13},{wch:28},{wch:20},{wch:16},{wch:36}];
-    const wb=XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb,ws,'Laporan');
-    XLSX.writeFile(wb,`Laporan_Keuangan_${todayISO()}.xlsx`);
-    toast(`Berhasil export ${rows.length} baris.`,'success');
-  }catch(e){ toast('Gagal export: '+e.message,'error'); }
-});
 
 // =========================================================
 // INIT DATES
