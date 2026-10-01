@@ -1,8 +1,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, EmailAuthProvider, reauthenticateWithCredential, updatePassword, verifyBeforeUpdateEmail, deleteUser } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy, getDoc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { initBudgeting } from './budgeting.js';
+import { initBudgeting, getActiveWallets, reloadWallets } from './budgeting.js';
 
+// ====== GANTI DENGAN CONFIG MILIKMU ======
 const firebaseConfig = {
   apiKey: "AIzaSyAnadqK4sTVRyIyoDEJJzhKPH1GNDZ4_kg",
   authDomain: "catatan-keuangan-e9041.firebaseapp.com",
@@ -38,6 +39,7 @@ const state = {
   detailFilter: 'semua', detailSearch: '', dashboardPeriode: 'semua'
 };
 
+// ====== UTILITAS ======
 const fmtRp = n => 'Rp ' + (Number(n)||0).toLocaleString('id-ID',{maximumFractionDigits:0});
 const fmtRpShort = n => {
   n = Number(n)||0;
@@ -52,7 +54,7 @@ const fmtBulan = k => { const [y,m]=k.split('-'); return BULAN[parseInt(m,10)-1]
 const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 const todayISO = () => { const d=new Date(); const off=d.getTimezoneOffset(); return new Date(d.getTime()-off*60000).toISOString().slice(0,10); };
 
-// Splash
+// ====== SPLASH ======
 const SPLASH_MIN_DURATION = 500;
 const splashStartTime = Date.now();
 let splashHidden = false;
@@ -68,18 +70,11 @@ function hideSplash(){
     setTimeout(() => splash.remove(), 500);
   }, remaining);
 }
-setTimeout(() => {
-  if(!splashHidden){
-    const authPage = document.getElementById('auth-page');
-    if(authPage) authPage.style.display = 'flex';
-    hideSplash();
-  }
-}, 8000);
 
+// ====== ICONS & THEME ======
 function refreshIcons(){
   if(window.feather) feather.replace({ 'stroke-width': 2 });
 }
-
 function initTheme(){
   const saved = localStorage.getItem('theme');
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -102,6 +97,7 @@ function toggleTheme(){
   setTheme(current === 'dark' ? 'light' : 'dark');
 }
 
+// ====== TOAST ======
 function toast(msg, type='success', title=null){
   const box=document.getElementById('toastBox');
   const el=document.createElement('div');
@@ -114,6 +110,7 @@ function toast(msg, type='success', title=null){
   setTimeout(()=>{el.classList.add('hide');setTimeout(()=>el.remove(),300);}, type==='error'?5200:3400);
 }
 
+// ====== FORM HELPERS ======
 function setErr(id,msg){
   const i=document.getElementById(id);
   const e=document.getElementById('err-'+id);
@@ -127,6 +124,7 @@ function clearErrs(form){
 function openModalEl(id){ const el=document.getElementById(id); if(el){el.style.display='flex';document.body.style.overflow='hidden';} }
 function closeModalEl(id){ const el=document.getElementById(id); if(el){el.style.display='none';document.body.style.overflow='';} }
 
+// ====== FIRESTORE ======
 async function loadCol(name){
   if(!state.profile) return [];
   try{
@@ -138,12 +136,15 @@ async function loadCol(name){
 async function saveCol(name, data){
   if(!state.profile) throw new Error("Belum login");
   await addDoc(collection(db, name), {
-    ...data, workspaceId: state.profile.workspaceId,
-    createdBy: state.profile.username, createdAt: serverTimestamp()
+    ...data,
+    workspaceId: state.profile.workspaceId,
+    createdBy: state.profile.username,
+    createdAt: serverTimestamp()
   });
 }
 async function delCol(name, id){ await deleteDoc(doc(db, name, id)); }
 
+// ====== REGISTER ======
 async function doRegister(){
   const username = document.getElementById('reg-username').value.trim().toLowerCase();
   const email = document.getElementById('reg-email').value.trim();
@@ -197,6 +198,7 @@ async function doRegister(){
   }finally{ btn.disabled = false; btn.textContent = orig; }
 }
 
+// ====== LOGIN ======
 async function doLogin(){
   const username = document.getElementById('login-username').value.trim().toLowerCase();
   const password = document.getElementById('login-password').value;
@@ -237,6 +239,7 @@ document.getElementById('btn-logout-removed').addEventListener('click', () => si
 ['reg-username','reg-email','reg-password'].forEach(id => document.getElementById(id).addEventListener('input', () => document.getElementById('reg-error').classList.remove('show')));
 document.getElementById('btn-theme-toggle').addEventListener('click', toggleTheme);
 
+// ====== AUTH STATE ======
 onAuthStateChanged(auth, async (user) => {
   const authPage = document.getElementById('auth-page');
   const appLayout = document.getElementById('app-layout');
@@ -273,16 +276,22 @@ onAuthStateChanged(auth, async (user) => {
     authPage.style.display = 'none';
     removedPage.style.display = 'none';
     appLayout.style.display = 'block';
-    renderAll();
-    refreshIcons();
-    toast(`Selamat datang, ${state.profile.username}!`, 'success');
-    hideSplash();
+
+    // Init budgeting SEBELUM render all, biar dompet sudah tersedia
     initBudgeting({
       state: state, db: db,
       workspaceId: state.profile.workspaceId,
       userId: state.user.uid,
       utils: { fmtRp, fmtRpShort, esc, todayISO, toast, refreshIcons, getKatIcon }
     });
+
+    // Tunggu bentar biar wallet terload
+    await new Promise(r => setTimeout(r, 800));
+
+    renderAll();
+    refreshIcons();
+    toast(`Selamat datang, ${state.profile.username}!`, 'success');
+    hideSplash();
   }catch(e){
     console.error('[Auth Error]', e);
     toast('Error: ' + e.message, 'error');
@@ -290,6 +299,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
+// ====== NAVIGASI ======
 const sidebar = document.getElementById('sidebar');
 const overlay = document.getElementById('sidebar-overlay');
 const openSidebar = () => { sidebar.classList.add('open'); overlay.classList.add('show'); };
@@ -300,7 +310,7 @@ overlay.addEventListener('click', closeSidebar);
 const PAGE_TITLES = {
   dashboard:'Dashboard', detail:'Detail Transaksi', pemasukan:'Pemasukan',
   pengeluaran:'Pengeluaran', kategori:'Kategori', budgeting:'Budgeting',
-  anggota:'Anggota'
+  anggota:'Anggota', profil:'Profil Saya', laporan:'Laporan & Export'
 };
 
 function goToPage(page){
@@ -316,7 +326,9 @@ function goToPage(page){
     if(page==='dashboard') renderCharts();
     if(page==='detail') renderDetail();
     if(page==='anggota') renderAnggota();
-  }catch(e){ console.error(e); }
+    if(page==='profil') renderProfil();
+    if(page==='laporan') renderLaporan();
+  }catch(e){ console.error('[goToPage]', e); }
   refreshIcons();
 }
 
@@ -325,6 +337,7 @@ document.getElementById('bottom-nav').addEventListener('click', e=>{ const b=e.t
 document.getElementById('link-ke-detail').addEventListener('click', e=>{ e.preventDefault(); goToPage('detail'); });
 document.getElementById('btn-logout').addEventListener('click', () => { closeSidebar(); signOut(auth); });
 
+// ====== RENDER KATEGORI ======
 function renderKatSelects(){
   const build=(sel,list)=>{
     if(!sel) return;
@@ -353,6 +366,28 @@ function renderKatLists(){
   draw('listKatKeluar',state.katPengeluaran,'keluar');
 }
 
+// ====== RENDER DOMPET SELECT ======
+function renderDompetSelects(){
+  const wallets = (typeof getActiveWallets === 'function') ? getActiveWallets() : [];
+  const build=(sel)=>{
+    if(!sel) return;
+    const prev = sel.value;
+    sel.innerHTML = `<option value="">-- Tanpa Dompet --</option>` + wallets.map(w => `<option value="${w.id}">${esc(w.name)}</option>`).join('');
+    if(wallets.some(w => w.id === prev)) sel.value = prev;
+  };
+  build(document.getElementById('inDompet'));
+  build(document.getElementById('outDompet'));
+  build(document.getElementById('entry-dompet'));
+}
+
+function autoSelectWallet(category, selectEl){
+  if(!selectEl) return;
+  const wallets = (typeof getActiveWallets === 'function') ? getActiveWallets() : [];
+  const matched = wallets.find(w => (w.categories || []).includes(category));
+  if(matched) selectEl.value = matched.id;
+}
+
+// ====== FILTER PERIODE ======
 function getPeriodeRange(){
   const now = new Date();
   if(state.dashboardPeriode === 'bulan-ini'){
@@ -375,6 +410,7 @@ function filterByPeriode(arr){
   return arr.filter(r => r.tanggal >= start && r.tanggal <= end);
 }
 
+// ====== STATS ======
 function renderStats(){
   const pem = filterByPeriode(state.pemasukan);
   const peng = filterByPeriode(state.pengeluaran);
@@ -390,6 +426,7 @@ function renderStats(){
   if(el('statSaldoSub')) el('statSaldoSub').textContent=saldo>=0?'Surplus':'Defisit';
 }
 
+// ====== TABLES ======
 function renderSimpleList(containerId, arr, type){
   const box = document.getElementById(containerId);
   if(!box) return;
@@ -450,6 +487,7 @@ function renderTables(){
   refreshIcons();
 }
 
+// ====== DETAIL ======
 function renderDetail(){
   let all = [
     ...state.pemasukan.map(r=>({...r, _tipe:'masuk', _keterangan:r.kegunaan})),
@@ -509,6 +547,7 @@ document.getElementById('detail-search').addEventListener('input', e => {
   renderDetail();
 });
 
+// ====== CHART ======
 function renderCharts(){
   if(typeof Chart === 'undefined') return;
   ['chartBulanan','chartKatKeluar','chartKatMasuk'].forEach(id=>{
@@ -572,14 +611,18 @@ function renderCharts(){
   buildD('chartKatMasuk',pem,['#16a34a','#22c55e','#84cc16','#14b8a6','#06b6d4','#3b82f6','#6366f1','#8b5cf6','#a855f7','#ec4899']);
 }
 
+// ====== RENDER ALL ======
 function renderAll(){
   renderKatSelects();
   renderKatLists();
+  renderDompetSelects();
   renderStats();
   renderTables();
   renderCharts();
   renderDetail();
   renderAnggota();
+  renderProfil();
+  renderLaporan();
   refreshIcons();
 }
 
@@ -593,6 +636,7 @@ document.querySelectorAll('#page-dashboard .chip').forEach(btn => {
   });
 });
 
+// ====== ANGGOTA ======
 async function renderAnggota(){
   if(!state.workspace || !state.profile) return;
   const wsInput = document.getElementById('ws-name-input');
@@ -611,7 +655,8 @@ async function renderAnggota(){
     const allUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
     const active = allUsers.filter(u => u.role !== 'removed');
     const removed = allUsers.filter(u => u.role === 'removed');
-    document.getElementById('countAnggota').textContent = active.length + ' / ' + MAX_MEMBERS;
+    const countEl = document.getElementById('countAnggota');
+    if(countEl) countEl.textContent = active.length + ' / ' + MAX_MEMBERS;
     if(!active.length){ box.innerHTML = '<div class="empty">Belum ada anggota.</div>'; return; }
     let html = active.map(u => {
       const isMe = u.uid === state.user.uid;
@@ -682,6 +727,327 @@ document.getElementById('btn-save-ws-name').addEventListener('click', async () =
   }catch(e){ toast('Gagal: ' + e.message, 'error'); }
 });
 
+// ====== PROFIL (Rebuilt from JS) ======
+function renderProfil(){
+  const page = document.getElementById('page-profil');
+  if(!page) return;
+
+  if(!state.profile){
+    page.innerHTML = `
+      <div class="card">
+        <div class="empty">
+          <i data-feather="alert-circle" style="width:48px;height:48px;opacity:.5"></i>
+          <br><strong>Gagal memuat profil</strong>
+          <br><span style="font-size:12px;color:var(--text-muted)">Koneksi ke server bermasalah.</span>
+          <br><br>
+          <button class="btn btn-primary" onclick="location.reload()">Coba Lagi</button>
+        </div>
+      </div>`;
+    refreshIcons();
+    return;
+  }
+
+  const role = state.profile.role || 'member';
+  const roleLabel = role === 'owner' ? 'Owner' : role === 'removed' ? 'Removed' : 'Member';
+  const roleClass = role === 'owner' ? 'owner' : role === 'removed' ? 'removed' : '';
+  const initial = (state.profile.username || '?')[0].toUpperCase();
+
+  page.innerHTML = `
+    <div class="card">
+      <div class="card-head"><h3>Profil Saya</h3></div>
+      <div class="profile-header">
+        <div class="profile-avatar">${esc(initial)}</div>
+        <div style="flex:1;min-width:0">
+          <div class="profile-username">${esc(state.profile.username || '-')}</div>
+          <div class="profile-email">${esc(state.profile.email || '-')}</div>
+          <span class="member-role ${roleClass}">${roleLabel}</span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Keamanan Akun</h3></div>
+      <button class="menu-btn" id="btn-ubah-username">
+        <span><i data-feather="edit-2" style="width:16px;height:16px;margin-right:8px"></i> Ubah Username</span>
+        <span>›</span>
+      </button>
+      <button class="menu-btn" id="btn-ubah-email">
+        <span><i data-feather="mail" style="width:16px;height:16px;margin-right:8px"></i> Ubah Email</span>
+        <span>›</span>
+      </button>
+      <button class="menu-btn" id="btn-ubah-password">
+        <span><i data-feather="key" style="width:16px;height:16px;margin-right:8px"></i> Ubah Password</span>
+        <span>›</span>
+      </button>
+    </div>
+    <div class="card danger-zone">
+      <div class="card-head"><h3 style="color:#b91c1c">Zona Bahaya</h3></div>
+      <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px;line-height:1.5">Setelah akun dihapus, kamu tidak bisa login lagi.</p>
+      <button class="btn btn-danger btn-block" id="btn-hapus-akun">
+        <i data-feather="trash-2" style="width:16px;height:16px"></i> Hapus Akun Saya
+      </button>
+    </div>`;
+
+  refreshIcons();
+
+  document.getElementById('btn-ubah-username')?.addEventListener('click', () => {
+    document.getElementById('new-username').value = state.profile.username || '';
+    document.getElementById('err-username').classList.remove('show');
+    openModalEl('modal-username');
+    refreshIcons();
+  });
+  document.getElementById('btn-ubah-email')?.addEventListener('click', () => {
+    document.getElementById('new-email').value = '';
+    document.getElementById('email-password').value = '';
+    document.getElementById('err-email').classList.remove('show');
+    openModalEl('modal-email');
+    refreshIcons();
+  });
+  document.getElementById('btn-ubah-password')?.addEventListener('click', () => {
+    document.getElementById('old-password').value = '';
+    document.getElementById('new-password').value = '';
+    document.getElementById('confirm-password').value = '';
+    document.getElementById('err-password').classList.remove('show');
+    openModalEl('modal-password');
+    refreshIcons();
+  });
+  document.getElementById('btn-hapus-akun')?.addEventListener('click', async () => {
+    if(state.profile.role === 'owner'){
+      const q = query(collection(db, 'users'), where('workspaceId','==',WORKSPACE_ID));
+      const snap = await getDocs(q);
+      const activeOthers = snap.docs.map(d => ({uid:d.id,...d.data()})).filter(u => u.uid !== state.user.uid && u.role !== 'removed');
+      if(activeOthers.length > 0){
+        toast(`Kamu masih owner dan ada ${activeOthers.length} member aktif.`, 'error', 'Tidak Bisa Hapus');
+        return;
+      }
+    }
+    document.getElementById('confirm-delete-text').value = '';
+    document.getElementById('delete-password').value = '';
+    document.getElementById('err-hapus').classList.remove('show');
+    openModalEl('modal-hapus');
+    refreshIcons();
+  });
+}
+
+// Modal close handlers
+document.getElementById('modal-username-close')?.addEventListener('click', () => closeModalEl('modal-username'));
+document.getElementById('modal-email-close')?.addEventListener('click', () => closeModalEl('modal-email'));
+document.getElementById('modal-password-close')?.addEventListener('click', () => closeModalEl('modal-password'));
+document.getElementById('modal-hapus-close')?.addEventListener('click', () => closeModalEl('modal-hapus'));
+
+// ====== UBAH USERNAME ======
+document.getElementById('btn-save-username').addEventListener('click', async () => {
+  const newUname = document.getElementById('new-username').value.trim().toLowerCase();
+  const errEl = document.getElementById('err-username');
+  errEl.classList.remove('show');
+  if(!newUname){ errEl.textContent='Username wajib diisi.'; errEl.classList.add('show'); return; }
+  if(!/^[a-z0-9_]{3,20}$/.test(newUname)){ errEl.textContent='Username 3-20 karakter.'; errEl.classList.add('show'); return; }
+  if(newUname === state.profile.username){ errEl.textContent='Username sama.'; errEl.classList.add('show'); return; }
+  const oldUname = state.profile.username;
+  const btn = document.getElementById('btn-save-username');
+  btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Menyimpan...';
+  try{
+    const snap = await getDoc(doc(db, 'usernames', newUname));
+    if(snap.exists()) throw new Error('Username sudah dipakai.');
+    await updateDoc(doc(db, 'users', state.user.uid), { username: newUname });
+    await setDoc(doc(db, 'usernames', newUname), { email: state.profile.email, uid: state.user.uid });
+    if(oldUname) await deleteDoc(doc(db, 'usernames', oldUname));
+    state.profile.username = newUname;
+    renderProfil();
+    closeModalEl('modal-username');
+    toast('Username diubah ke "' + newUname + '".', 'success');
+  }catch(e){ errEl.textContent = e.message; errEl.classList.add('show'); }
+  finally{ btn.disabled = false; btn.textContent = orig; }
+});
+
+// ====== UBAH EMAIL ======
+document.getElementById('btn-save-email').addEventListener('click', async () => {
+  const newEmail = document.getElementById('new-email').value.trim();
+  const password = document.getElementById('email-password').value;
+  const errEl = document.getElementById('err-email');
+  errEl.classList.remove('show');
+  if(!newEmail){ errEl.textContent='Email baru wajib diisi.'; errEl.classList.add('show'); return; }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)){ errEl.textContent='Format email tidak valid.'; errEl.classList.add('show'); return; }
+  if(!password){ errEl.textContent='Password wajib diisi.'; errEl.classList.add('show'); return; }
+  const btn = document.getElementById('btn-save-email');
+  btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Memproses...';
+  try{
+    const cred = EmailAuthProvider.credential(state.profile.email, password);
+    await reauthenticateWithCredential(state.user, cred);
+    await verifyBeforeUpdateEmail(state.user, newEmail);
+    await updateDoc(doc(db, 'users', state.user.uid), { email: newEmail, emailVerified: false });
+    state.profile.email = newEmail;
+    renderProfil();
+    closeModalEl('modal-email');
+    toast('Link verifikasi dikirim ke email baru.', 'success');
+  }catch(e){
+    let msg = e.message;
+    if(e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') msg = 'Password salah.';
+    else if(e.code === 'auth/email-already-in-use') msg = 'Email sudah digunakan.';
+    errEl.textContent = msg; errEl.classList.add('show');
+  }finally{ btn.disabled = false; btn.textContent = orig; }
+});
+
+// ====== UBAH PASSWORD ======
+document.getElementById('btn-save-password').addEventListener('click', async () => {
+  const oldPass = document.getElementById('old-password').value;
+  const newPass = document.getElementById('new-password').value;
+  const confPass = document.getElementById('confirm-password').value;
+  const errEl = document.getElementById('err-password');
+  errEl.classList.remove('show');
+  if(!oldPass){ errEl.textContent='Password lama wajib diisi.'; errEl.classList.add('show'); return; }
+  if(!newPass || newPass.length < 6){ errEl.textContent='Password baru minimal 6 karakter.'; errEl.classList.add('show'); return; }
+  if(newPass !== confPass){ errEl.textContent='Konfirmasi tidak cocok.'; errEl.classList.add('show'); return; }
+  if(newPass === oldPass){ errEl.textContent='Password baru harus berbeda.'; errEl.classList.add('show'); return; }
+  const btn = document.getElementById('btn-save-password');
+  btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Menyimpan...';
+  try{
+    const cred = EmailAuthProvider.credential(state.profile.email, oldPass);
+    await reauthenticateWithCredential(state.user, cred);
+    await updatePassword(state.user, newPass);
+    closeModalEl('modal-password');
+    toast('Password berhasil diubah.', 'success');
+  }catch(e){
+    let msg = e.message;
+    if(e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') msg = 'Password lama salah.';
+    errEl.textContent = msg; errEl.classList.add('show');
+  }finally{ btn.disabled = false; btn.textContent = orig; }
+});
+
+// ====== HAPUS AKUN ======
+document.getElementById('btn-confirm-hapus').addEventListener('click', async () => {
+  const confirmText = document.getElementById('confirm-delete-text').value.trim().toUpperCase();
+  const password = document.getElementById('delete-password').value;
+  const errEl = document.getElementById('err-hapus');
+  errEl.classList.remove('show');
+  if(confirmText !== 'HAPUS'){ errEl.textContent='Ketik "HAPUS" untuk konfirmasi.'; errEl.classList.add('show'); return; }
+  if(!password){ errEl.textContent='Password wajib diisi.'; errEl.classList.add('show'); return; }
+  const btn = document.getElementById('btn-confirm-hapus');
+  btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Menghapus...';
+  try{
+    const cred = EmailAuthProvider.credential(state.profile.email, password);
+    await reauthenticateWithCredential(state.user, cred);
+    try{ await deleteDoc(doc(db, 'usernames', state.profile.username)); }catch(e){}
+    await deleteDoc(doc(db, 'users', state.user.uid));
+    if(state.profile.role === 'owner'){
+      try{ await deleteDoc(doc(db, 'workspaces', WORKSPACE_ID)); }catch(e){}
+    } else {
+      const newMembers = (state.workspace.members || []).filter(m => m !== state.user.uid);
+      await updateDoc(doc(db, 'workspaces', WORKSPACE_ID), { members: newMembers });
+    }
+    await deleteUser(state.user);
+    toast('Akun berhasil dihapus.', 'success');
+  }catch(e){
+    let msg = e.message;
+    if(e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') msg = 'Password salah.';
+    errEl.textContent = msg; errEl.classList.add('show');
+    btn.disabled = false; btn.textContent = orig;
+  }
+});
+
+// ====== LAPORAN (Rebuilt from JS) ======
+function renderLaporan(){
+  const page = document.getElementById('page-laporan');
+  if(!page) return;
+
+  page.innerHTML = `
+    <div class="card">
+      <div class="card-head"><h3>Filter Laporan</h3></div>
+      <div class="field"><label>Jenis Transaksi</label><select id="expJenis">
+        <option value="semua">Semua Transaksi</option>
+        <option value="pemasukan">Pemasukan saja</option>
+        <option value="pengeluaran">Pengeluaran saja</option>
+      </select></div>
+      <div class="field"><label>Dari Tanggal</label><input type="date" id="expDari"></div>
+      <div class="field"><label>Sampai Tanggal</label><input type="date" id="expSampai"></div>
+      <div class="form-actions" style="flex-direction:column">
+        <button class="btn btn-ghost btn-block" id="btnPreview"><i data-feather="search" style="width:16px;height:16px"></i> Tampilkan Preview</button>
+        <button class="btn btn-primary btn-block" id="btnExport"><i data-feather="download" style="width:16px;height:16px"></i> Export ke Excel</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Preview <span class="badge" id="countPreview">0</span></h3></div>
+      <div id="tablePreview"></div>
+    </div>`;
+
+  refreshIcons();
+  document.getElementById('btnPreview').addEventListener('click', renderPreview);
+  document.getElementById('btnExport').addEventListener('click', doExportExcel);
+  renderPreview();
+}
+
+function getFilteredRows(){
+  const jenisEl = document.getElementById('expJenis');
+  const dariEl = document.getElementById('expDari');
+  const sampaiEl = document.getElementById('expSampai');
+  const jenis = jenisEl ? jenisEl.value : 'semua';
+  const dari = dariEl ? dariEl.value : '';
+  const sampai = sampaiEl ? sampaiEl.value : '';
+  const inRange=t=>(!dari||t>=dari)&&(!sampai||t<=sampai);
+  const rows=[];
+  if(jenis==='semua'||jenis==='pemasukan'){
+    state.pemasukan.filter(r=>inRange(r.tanggal)).forEach(r=>{
+      rows.push({_tipe:'Pemasukan',Tanggal:r.tanggal,Kegunaan:r.kegunaan||'',Kategori:r.kategori||'',Jumlah:Number(r.jumlah)||0,Deskripsi:r.deskripsi||''});
+    });
+  }
+  if(jenis==='semua'||jenis==='pengeluaran'){
+    state.pengeluaran.filter(r=>inRange(r.tanggal)).forEach(r=>{
+      rows.push({_tipe:'Pengeluaran',Tanggal:r.tanggal,Kegunaan:r.sumber||'',Kategori:r.kategori||'',Jumlah:Number(r.jumlah)||0,Deskripsi:r.deskripsi||''});
+    });
+  }
+  return rows.sort((a,b)=>(a.Tanggal||'').localeCompare(b.Tanggal||''));
+}
+
+function renderPreview(){
+  const box = document.getElementById('tablePreview');
+  if(!box) return;
+  if(!state.profile){
+    box.innerHTML = `<div class="empty"><strong>Gagal memuat data</strong><br><span style="font-size:12px">Koneksi bermasalah.</span></div>`;
+    return;
+  }
+  const rows = getFilteredRows();
+  const countEl = document.getElementById('countPreview');
+  if(countEl) countEl.textContent = rows.length;
+  if(!rows.length){
+    box.innerHTML = `<div class="empty"><i data-feather="file-text" style="width:40px;height:40px;opacity:.4"></i><br>Tidak ada data pada filter ini.</div>`;
+    refreshIcons();
+    return;
+  }
+  const total = rows.reduce((s,r)=>s+r.Jumlah,0);
+  box.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>Tanggal</th><th>Jenis</th><th>Keterangan</th><th>Kategori</th><th style="text-align:right">Jumlah</th></tr></thead>
+    <tbody>
+      ${rows.map(r=>`<tr>
+        <td style="white-space:nowrap">${fmtTanggal(r.Tanggal)}</td>
+        <td>${r._tipe==='Pemasukan'?'<span class="badge">Masuk</span>':'<span class="badge" style="background:var(--red-light);color:var(--red-dark)">Keluar</span>'}</td>
+        <td>${esc(r.Kegunaan)}</td>
+        <td>${esc(r.Kategori)}</td>
+        <td class="num ${r._tipe==='Pemasukan'?'in':'out'}">${fmtRp(r.Jumlah)}</td>
+      </tr>`).join('')}
+      <tr style="background:var(--surface);font-weight:700">
+        <td colspan="4" style="text-align:right">TOTAL</td>
+        <td class="num">${fmtRp(total)}</td>
+      </tr>
+    </tbody>
+  </table></div>`;
+}
+
+function doExportExcel(){
+  if(!state.profile){ toast('Data belum siap.', 'error'); return; }
+  const rows = getFilteredRows();
+  if(!rows.length){ toast('Tidak ada data untuk diexport.','error'); return; }
+  try{
+    const aoa=[['Tanggal','Kegunaan','Kategori','Jumlah','Deskripsi']];
+    rows.forEach(r=>aoa.push([r.Tanggal,r.Kegunaan,r.Kategori,r.Jumlah,r.Deskripsi]));
+    const ws=XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols']=[{wch:13},{wch:28},{wch:20},{wch:16},{wch:36}];
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Laporan');
+    XLSX.writeFile(wb,`Laporan_Keuangan_${todayISO()}.xlsx`);
+    toast(`Berhasil export ${rows.length} baris.`,'success');
+  }catch(e){ toast('Gagal export: '+e.message,'error'); }
+}
+
+// ====== MODAL ENTRY ======
 const modal = document.getElementById('modal-entry');
 const modalState = { tab:'expense', kategori:null, expr:'0' };
 
@@ -691,8 +1057,12 @@ function openModal(tab='expense'){
   document.getElementById('entry-kegunaan').value='';
   document.getElementById('entry-deskripsi').value='';
   document.getElementById('search-kategori').value='';
+  document.getElementById('entry-dompet').value='';
+  const infoEl = document.getElementById('entry-dompet-info');
+  if(infoEl) infoEl.style.display = 'none';
   document.getElementById('modal-tabs').querySelectorAll('button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
   updateModalFields();
+  renderDompetSelects();
   renderKategoriGrid('');
   updateAmountDisplay();
   modal.style.display='flex';
@@ -734,8 +1104,28 @@ document.getElementById('kategori-grid').addEventListener('click',e=>{
   const kat=item.dataset.kat;
   if(kat==='__NEW__'){ closeModal(); goToPage('kategori'); return; }
   modalState.kategori=kat;
+  // Auto-select dompet
+  autoSelectWallet(kat, document.getElementById('entry-dompet'));
+  showDompetInfo();
   renderKategoriGrid(document.getElementById('search-kategori').value);
 });
+
+function showDompetInfo(){
+  const sel = document.getElementById('entry-dompet');
+  const infoEl = document.getElementById('entry-dompet-info');
+  if(!sel || !infoEl) return;
+  const walletId = sel.value;
+  if(!walletId){ infoEl.style.display = 'none'; return; }
+  const wallets = (typeof getActiveWallets === 'function') ? getActiveWallets() : [];
+  const w = wallets.find(x => x.id === walletId);
+  if(!w){ infoEl.style.display = 'none'; return; }
+  infoEl.style.display = 'block';
+  infoEl.innerHTML = `<i data-feather="info" style="width:12px;height:12px;display:inline-block;vertical-align:middle"></i> Dompet: <strong>${esc(w.name)}</strong> · Budget ${fmtRp(w.budget || 0)} / ${w.period === 'weekly' ? 'minggu' : 'bulan'}`;
+  refreshIcons();
+}
+
+document.getElementById('entry-dompet').addEventListener('change', showDompetInfo);
+
 document.getElementById('search-kategori').addEventListener('input',e=>renderKategoriGrid(e.target.value));
 document.getElementById('modal-tabs').addEventListener('click',e=>{
   const btn=e.target.closest('button[data-tab]'); if(!btn) return;
@@ -779,6 +1169,7 @@ document.getElementById('btn-save-entry').addEventListener('click', async ()=>{
   const kegunaan=document.getElementById('entry-kegunaan').value.trim();
   const deskripsi=document.getElementById('entry-deskripsi').value.trim();
   const jumlah=evalExpr(modalState.expr);
+  const walletId = document.getElementById('entry-dompet').value || null;
   if(!tanggal){ toast('Tanggal wajib diisi.','error'); return; }
   if(!kegunaan){ toast('Field Kegunaan/Sumber wajib diisi.','error'); return; }
   if(!modalState.kategori){ toast('Kategori wajib dipilih.','error'); return; }
@@ -786,8 +1177,8 @@ document.getElementById('btn-save-entry').addEventListener('click', async ()=>{
   const isIncome=modalState.tab==='income';
   const collectionName=isIncome?'pemasukan':'pengeluaran';
   const data=isIncome
-    ?{tanggal,kegunaan,kategori:modalState.kategori,jumlah,deskripsi}
-    :{tanggal,sumber:kegunaan,kategori:modalState.kategori,jumlah,deskripsi};
+    ?{tanggal,kegunaan,kategori:modalState.kategori,jumlah,deskripsi,walletId}
+    :{tanggal,sumber:kegunaan,kategori:modalState.kategori,jumlah,deskripsi,walletId};
   try{
     await saveCol(collectionName,data);
     state[collectionName]=await loadCol(collectionName);
@@ -802,6 +1193,7 @@ document.getElementById('modal-close').addEventListener('click',closeModal);
 modal.addEventListener('click',e=>{ if(e.target===modal) closeModal(); });
 document.getElementById('link-atur-kategori').addEventListener('click',e=>{ e.preventDefault(); closeModal(); goToPage('kategori'); });
 
+// ====== FORM PEMASUKAN / PENGELUARAN ======
 document.getElementById('formPemasukan').addEventListener('submit',async e=>{
   e.preventDefault(); const form=e.target; clearErrs(form);
   const tanggal=document.getElementById('inTanggal').value.trim();
@@ -809,6 +1201,7 @@ document.getElementById('formPemasukan').addEventListener('submit',async e=>{
   const kategori=document.getElementById('inKategori').value.trim();
   const jumlahRaw=document.getElementById('inJumlah').value.trim();
   const deskripsi=document.getElementById('inDeskripsi').value.trim();
+  const walletId = document.getElementById('inDompet').value || null;
   const errs=[];
   if(!tanggal){setErr('inTanggal','Tanggal wajib diisi.');errs.push('Tanggal');}
   if(!kegunaan){setErr('inKegunaan','Sumber wajib diisi.');errs.push('Sumber');}
@@ -817,7 +1210,7 @@ document.getElementById('formPemasukan').addEventListener('submit',async e=>{
   else if(isNaN(Number(jumlahRaw))||Number(jumlahRaw)<=0){setErr('inJumlah','Jumlah harus > 0.');errs.push('Jumlah');}
   if(errs.length){ toast('Field bermasalah: '+errs.join(', '),'error'); return; }
   try{
-    await saveCol('pemasukan',{tanggal,kegunaan,kategori,jumlah:Number(jumlahRaw),deskripsi});
+    await saveCol('pemasukan',{tanggal,kegunaan,kategori,jumlah:Number(jumlahRaw),deskripsi,walletId});
     state.pemasukan=await loadCol('pemasukan');
     form.reset(); clearErrs(form);
     document.getElementById('inTanggal').value=todayISO();
@@ -832,6 +1225,7 @@ document.getElementById('formPengeluaran').addEventListener('submit',async e=>{
   const kategori=document.getElementById('outKategori').value.trim();
   const jumlahRaw=document.getElementById('outJumlah').value.trim();
   const deskripsi=document.getElementById('outDeskripsi').value.trim();
+  const walletId = document.getElementById('outDompet').value || null;
   const errs=[];
   if(!tanggal){setErr('outTanggal','Tanggal wajib diisi.');errs.push('Tanggal');}
   if(!sumber){setErr('outSumber','Kegunaan wajib diisi.');errs.push('Kegunaan');}
@@ -840,7 +1234,7 @@ document.getElementById('formPengeluaran').addEventListener('submit',async e=>{
   else if(isNaN(Number(jumlahRaw))||Number(jumlahRaw)<=0){setErr('outJumlah','Jumlah harus > 0.');errs.push('Jumlah');}
   if(errs.length){ toast('Field bermasalah: '+errs.join(', '),'error'); return; }
   try{
-    await saveCol('pengeluaran',{tanggal,sumber,kategori,jumlah:Number(jumlahRaw),deskripsi});
+    await saveCol('pengeluaran',{tanggal,sumber,kategori,jumlah:Number(jumlahRaw),deskripsi,walletId});
     state.pengeluaran=await loadCol('pengeluaran');
     form.reset(); clearErrs(form);
     document.getElementById('outTanggal').value=todayISO();
@@ -849,6 +1243,11 @@ document.getElementById('formPengeluaran').addEventListener('submit',async e=>{
   }catch(err){ toast('Gagal: '+err.message,'error'); }
 });
 
+// Auto-select dompet saat kategori di form berubah
+document.getElementById('inKategori').addEventListener('change', e => autoSelectWallet(e.target.value, document.getElementById('inDompet')));
+document.getElementById('outKategori').addEventListener('change', e => autoSelectWallet(e.target.value, document.getElementById('outDompet')));
+
+// ====== HAPUS TRANSAKSI ======
 document.addEventListener('click',async e=>{
   const btn=e.target.closest('button[data-del]'); if(!btn) return;
   const tipe=btn.dataset.del; const id=btn.dataset.id;
@@ -861,6 +1260,7 @@ document.addEventListener('click',async e=>{
   }catch(err){ toast('Gagal menghapus: '+err.message,'error'); }
 });
 
+// ====== KATEGORI ======
 function tambahKat(inputId,key){
   const inp=document.getElementById(inputId); const nama=inp.value.trim();
   if(!nama){ toast('Nama kategori tidak boleh kosong.','error'); return; }
@@ -888,6 +1288,7 @@ document.addEventListener('click',e=>{
   toast('Kategori dihapus.','success');
 });
 
+// ====== INIT ======
 document.getElementById('inTanggal').value=todayISO();
 document.getElementById('outTanggal').value=todayISO();
 document.getElementById('entry-tanggal').value=todayISO();
