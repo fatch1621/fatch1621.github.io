@@ -1,7 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, EmailAuthProvider, reauthenticateWithCredential, updatePassword, verifyBeforeUpdateEmail, deleteUser } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy, getDoc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { initBudgeting, getWallets, getActiveWallets } from './budgeting.js';
+import { initBudgeting } from './budgeting.js';
+
 // ====== GANTI DENGAN CONFIG MILIKMU ======
 const firebaseConfig = {
   apiKey: "AIzaSyAnadqK4sTVRyIyoDEJJzhKPH1GNDZ4_kg",
@@ -22,7 +23,6 @@ const DEF_KAT_M = ['Gaji','Bonus','Investasi','Penjualan','Usaha','Lainnya'];
 const DEF_KAT_K = ['Makanan & Minuman','Transportasi','Belanja','Tagihan','Kesehatan','Hiburan','Pendidikan','Lainnya'];
 const BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 
-// ====== KATEGORI → FEATHER ICON MAPPING ======
 const KAT_ICONS = {
   'Gaji':'briefcase','Bonus':'gift','Investasi':'trending-up','Penjualan':'shopping-cart',
   'Usaha':'home','Lainnya':'package',
@@ -58,7 +58,7 @@ const todayISO = () => { const d=new Date(); const off=d.getTimezoneOffset(); re
 
 // Splash screen control
 const SPLASH_MIN_DURATION = 500;
-const SPLASH_MAX_DURATION = 2000;   // Fallback: paksa hilang setelah 3.5s
+const SPLASH_MAX_DURATION = 15000;
 const splashStartTime = Date.now();
 let splashHidden = false;
 function hideSplash(){
@@ -73,18 +73,17 @@ function hideSplash(){
     setTimeout(() => splash.remove(), 500);
   }, remaining);
 }
-// Fallback: kalau Firebase tidak response, paksa hilang
 setTimeout(() => {
   if(!splashHidden){
     console.warn('[Splash] Fallback timeout — tampilkan login sebagai default');
-    // Tampilkan halaman login sebagai safe default
-    document.getElementById('auth-page').style.display = 'flex';
+    const authPage = document.getElementById('auth-page');
+    if(authPage) authPage.style.display = 'flex';
     hideSplash();
   }
 }, SPLASH_MAX_DURATION);
 
 // =========================================================
-// FEATHER ICONS REFRESH
+// FEATHER ICONS
 // =========================================================
 function refreshIcons(){
   if(window.feather) feather.replace({ 'stroke-width': 2 });
@@ -102,16 +101,13 @@ function initTheme(){
 function setTheme(theme){
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('theme', theme);
-  // Update ikon toggle
   const btn = document.getElementById('btn-theme-toggle');
   if(btn){
     btn.innerHTML = theme === 'dark' ? '<i data-feather="sun"></i>' : '<i data-feather="moon"></i>';
     refreshIcons();
   }
-  // Update meta theme-color untuk PWA status bar
   const meta = document.querySelector('meta[name="theme-color"]');
   if(meta) meta.setAttribute('content', theme === 'dark' ? '#1A1410' : '#3B2A20');
-  // Re-render chart kalau ada (chart perlu update warna teks)
   if(state.user && state.profile){
     try{ renderCharts(); }catch(e){}
   }
@@ -137,7 +133,7 @@ function toast(msg, type='success', title=null){
 }
 
 // =========================================================
-// FORM ERROR HELPERS
+// FORM HELPERS
 // =========================================================
 function setErr(id,msg){
   const i=document.getElementById(id);
@@ -285,7 +281,6 @@ document.getElementById('btn-logout-removed').addEventListener('click', () => si
 ['login-username','login-password'].forEach(id => document.getElementById(id).addEventListener('input', () => document.getElementById('login-error').classList.remove('show')));
 ['reg-username','reg-email','reg-password'].forEach(id => document.getElementById(id).addEventListener('input', () => document.getElementById('reg-error').classList.remove('show')));
 
-// Theme toggle button
 document.getElementById('btn-theme-toggle').addEventListener('click', toggleTheme);
 
 // =========================================================
@@ -297,6 +292,7 @@ onAuthStateChanged(auth, async (user) => {
   const removedPage = document.getElementById('removed-page');
 
   if(!user){
+    console.log('[Auth] User tidak terautentikasi');
     state.user = null; state.profile = null; state.workspace = null;
     authPage.style.display = 'flex';
     appLayout.style.display = 'none';
@@ -306,33 +302,13 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
+  console.log('[Auth] User terautentikasi:', user.email);
   state.user = user;
   try{
     const userSnap = await getDoc(doc(db, 'users', user.uid));
     if(!userSnap.exists()){ await handleLegacyAccount(user); return; }
 
-state.profile = userSnap.data();
-// Simpan ke localStorage
-try {
-  localStorage.setItem('cachedProfile', JSON.stringify(state.profile));
-}catch(e){
-  console.error(e);
-  // Fallback: pakai cache kalau ada
-  try {
-    const cached = localStorage.getItem('cachedProfile');
-    if(cached){
-      state.profile = JSON.parse(cached);
-      console.log('[Auth] Menggunakan cache profile');
-      renderAll();
-      refreshIcons();
-      hideSplash();
-      toast('Menampilkan data cache — cek koneksi internet.', 'warn');
-      return;
-    }
-  } catch(err){}
-  toast('Error: ' + e.message, 'error');
-  hideSplash();
-}
+    state.profile = userSnap.data();
 
     if(state.profile.role === 'removed'){
       authPage.style.display = 'none';
@@ -355,12 +331,12 @@ try {
     authPage.style.display = 'none';
     removedPage.style.display = 'none';
     appLayout.style.display = 'block';
-       renderAll();
+    renderAll();
     refreshIcons();
     toast(`Selamat datang, ${state.profile.username}!`, 'success');
     hideSplash();
 
-    // ===== INIT BUDGETING =====
+    // INIT BUDGETING
     initBudgeting({
       state: state,
       db: db,
@@ -376,8 +352,9 @@ try {
         getKatIcon: getKatIcon
       }
     });
+
   }catch(e){
-    console.error(e);
+    console.error('[Auth Error]', e);
     toast('Error: ' + e.message, 'error');
     hideSplash();
   }
@@ -476,16 +453,11 @@ document.getElementById('link-ke-detail').addEventListener('click', e=>{ e.preve
 document.getElementById('btn-logout').addEventListener('click', () => { closeSidebar(); signOut(auth); });
 
 // =========================================================
-// INIT
-// =========================================================
-initTheme();
-refreshIcons();
-
-// =========================================================
 // RENDER KATEGORI
 // =========================================================
 function renderKatSelects(){
   const build=(sel,list)=>{
+    if(!sel) return;
     const prev=sel.value;
     sel.innerHTML=`<option value="">-- Pilih Kategori --</option>`+list.map(k=>`<option value="${esc(k)}">${esc(k)}</option>`).join('');
     if(list.includes(prev)) sel.value=prev;
@@ -496,6 +468,7 @@ function renderKatSelects(){
 function renderKatLists(){
   const draw=(id,list,type)=>{
     const box=document.getElementById(id);
+    if(!box) return;
     if(!list.length){
       box.innerHTML=`<span style="color:var(--text-muted);font-size:12.5px">Belum ada kategori.</span>`;
       return;
@@ -542,12 +515,13 @@ function renderStats(){
   const tm = pem.reduce((s,r)=>s+Number(r.jumlah||0),0);
   const tk = peng.reduce((s,r)=>s+Number(r.jumlah||0),0);
   const saldo = tm - tk;
-  document.getElementById('statPemasukan').textContent=fmtRpShort(tm);
-  document.getElementById('statPengeluaran').textContent=fmtRpShort(tk);
-  document.getElementById('statSaldo').textContent=fmtRpShort(saldo);
-  document.getElementById('statPemasukanSub').textContent=pem.length+' transaksi';
-  document.getElementById('statPengeluaranSub').textContent=peng.length+' transaksi';
-  document.getElementById('statSaldoSub').textContent=saldo>=0?'Surplus':'Defisit';
+  const el = (id) => document.getElementById(id);
+  if(el('statPemasukan')) el('statPemasukan').textContent=fmtRpShort(tm);
+  if(el('statPengeluaran')) el('statPengeluaran').textContent=fmtRpShort(tk);
+  if(el('statSaldo')) el('statSaldo').textContent=fmtRpShort(saldo);
+  if(el('statPemasukanSub')) el('statPemasukanSub').textContent=pem.length+' transaksi';
+  if(el('statPengeluaranSub')) el('statPengeluaranSub').textContent=peng.length+' transaksi';
+  if(el('statSaldoSub')) el('statSaldoSub').textContent=saldo>=0?'Surplus':'Defisit';
 }
 
 // =========================================================
@@ -555,8 +529,10 @@ function renderStats(){
 // =========================================================
 function renderSimpleList(containerId, arr, type){
   const box = document.getElementById(containerId);
+  if(!box) return;
   if(!arr.length){
-    box.innerHTML = `<div class="empty"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg><br>Belum ada data.</div>`;
+    box.innerHTML = `<div class="empty"><i data-feather="${type==='masuk'?'download':'upload'}" style="width:40px;height:40px;opacity:.4"></i><br>Belum ada data.</div>`;
+    refreshIcons();
     return;
   }
   box.innerHTML = `<div class="tx-list">${arr.map(r=>`
@@ -578,16 +554,19 @@ function renderSimpleList(containerId, arr, type){
 function renderTables(){
   const dp=[...state.pemasukan].sort((a,b)=>(b.tanggal||'').localeCompare(a.tanggal||''));
   const dk=[...state.pengeluaran].sort((a,b)=>(b.tanggal||'').localeCompare(a.tanggal||''));
-  document.getElementById('countPemasukan').textContent=dp.length;
-  document.getElementById('countPengeluaran').textContent=dk.length;
+  const el = (id) => document.getElementById(id);
+  if(el('countPemasukan')) el('countPemasukan').textContent=dp.length;
+  if(el('countPengeluaran')) el('countPengeluaran').textContent=dk.length;
   renderSimpleList('tablePemasukan', dp, 'masuk');
   renderSimpleList('tablePengeluaran', dk, 'keluar');
 
   const recent=[...state.pemasukan.map(r=>({...r,_tipe:'masuk'})),...state.pengeluaran.map(r=>({...r,_tipe:'keluar'}))]
     .sort((a,b)=>(b.tanggal||'').localeCompare(a.tanggal||'')).slice(0,5);
   const rt=document.getElementById('recentTable');
+  if(!rt) return;
   if(!recent.length){
-    rt.innerHTML=`<div class="empty"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M22 6l-10 7L2 6"/></svg><br>Belum ada transaksi.</div>`;
+    rt.innerHTML=`<div class="empty"><i data-feather="inbox" style="width:40px;height:40px;opacity:.4"></i><br>Belum ada transaksi.</div>`;
+    refreshIcons();
     return;
   }
   rt.innerHTML=`<div class="tx-list">${recent.map(r=>{
@@ -625,8 +604,10 @@ function renderDetail(){
       (r.deskripsi||'').toLowerCase().includes(q)
     );
   }
-  document.getElementById('countDetail').textContent = all.length;
+  const countEl = document.getElementById('countDetail');
+  if(countEl) countEl.textContent = all.length;
   const box = document.getElementById('detailList');
+  if(!box) return;
   if(!all.length){
     box.innerHTML = `<div class="empty"><i data-feather="search" style="width:40px;height:40px;opacity:.4"></i><br>Tidak ada transaksi.</div>`;
     refreshIcons();
@@ -678,7 +659,6 @@ function renderCharts(){
     if(c){ const inst=Chart.getChart(c); if(inst) inst.destroy(); }
   });
 
-  // Warna dinamis berdasarkan tema
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   const textColor = isDark ? '#C9B29A' : '#7B5E4A';
   const gridColor = isDark ? 'rgba(201,178,154,.1)' : 'rgba(123,94,74,.1)';
@@ -692,40 +672,45 @@ function renderCharts(){
   peng.forEach(r=>{const k=(r.tanggal||'').slice(0,7); if(!k)return; map[k]=map[k]||{in:0,out:0}; map[k].out+=Number(r.jumlah||0);});
   const keys=Object.keys(map).sort().slice(-12);
 
-  new Chart(document.getElementById('chartBulanan'),{
-    type:'bar',
-    data:{
-      labels:keys.length?keys.map(fmtBulan):['Belum ada'],
-      datasets:[
-        {label:'Masuk',data:keys.length?keys.map(k=>map[k].in):[0],backgroundColor:greenColor,borderRadius:8},
-        {label:'Keluar',data:keys.length?keys.map(k=>map[k].out):[0],backgroundColor:redColor,borderRadius:8}
-      ]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{
-        legend:{position:'top',labels:{color:textColor,font:{family:'Plus Jakarta Sans',size:12,weight:'600'},usePointStyle:true,boxWidth:10}},
-        tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${fmtRp(c.parsed.y)}`}}
+  const chartBulananEl = document.getElementById('chartBulanan');
+  if(chartBulananEl){
+    new Chart(chartBulananEl,{
+      type:'bar',
+      data:{
+        labels:keys.length?keys.map(fmtBulan):['Belum ada'],
+        datasets:[
+          {label:'Masuk',data:keys.length?keys.map(k=>map[k].in):[0],backgroundColor:greenColor,borderRadius:8},
+          {label:'Keluar',data:keys.length?keys.map(k=>map[k].out):[0],backgroundColor:redColor,borderRadius:8}
+        ]
       },
-      scales:{
-        y:{
-          beginAtZero:true,
-          ticks:{color:textColor,font:{family:'Plus Jakarta Sans',size:11},callback:v=>fmtRpShort(v)},
-          grid:{color:gridColor}
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{position:'top',labels:{color:textColor,font:{family:'Plus Jakarta Sans',size:12,weight:'600'},usePointStyle:true,boxWidth:10}},
+          tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${fmtRp(c.parsed.y)}`}}
         },
-        x:{
-          ticks:{color:textColor,font:{family:'Plus Jakarta Sans',size:11}},
-          grid:{display:false}
+        scales:{
+          y:{
+            beginAtZero:true,
+            ticks:{color:textColor,font:{family:'Plus Jakarta Sans',size:11},callback:v=>fmtRpShort(v)},
+            grid:{color:gridColor}
+          },
+          x:{
+            ticks:{color:textColor,font:{family:'Plus Jakarta Sans',size:11}},
+            grid:{display:false}
+          }
         }
       }
-    }
-  });
+    });
+  }
 
   const buildD=(id,arr,pal)=>{
+    const canvas = document.getElementById(id);
+    if(!canvas) return;
     const agg={};
     arr.forEach(r=>{const k=r.kategori||'(Tanpa Kategori)'; agg[k]=(agg[k]||0)+Number(r.jumlah||0);});
     const lbl=Object.keys(agg); const val=lbl.map(l=>agg[l]);
-    new Chart(document.getElementById(id),{
+    new Chart(canvas,{
       type:'doughnut',
       data:{
         labels:lbl.length?lbl:['Belum ada'],
@@ -779,11 +764,14 @@ document.querySelectorAll('#page-dashboard .chip').forEach(btn => {
 // =========================================================
 async function renderAnggota(){
   if(!state.workspace || !state.profile) return;
-  document.getElementById('ws-name-input').value = state.workspace.name || '';
+  const wsInput = document.getElementById('ws-name-input');
+  if(!wsInput) return;
+  wsInput.value = state.workspace.name || '';
   const isOwner = state.profile.role === 'owner';
   document.getElementById('btn-save-ws-name').style.display = isOwner ? 'inline-flex' : 'none';
-  document.getElementById('ws-name-input').disabled = !isOwner;
+  wsInput.disabled = !isOwner;
   const box = document.getElementById('anggotaList');
+  if(!box) return;
   box.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Memuat...</div>';
   try{
     const q = query(collection(db, 'users'), where('workspaceId','==',WORKSPACE_ID));
@@ -863,45 +851,115 @@ document.getElementById('btn-save-ws-name').addEventListener('click', async () =
 });
 
 // =========================================================
-// PROFIL
+// PROFIL (Rebuilt from JS)
 // =========================================================
 function renderProfil(){
+  const page = document.getElementById('page-profil');
+  if(!page) return;
+
   if(!state.profile){
-    const page = document.getElementById('page-profil');
-    if(page){
-      page.innerHTML = `
-        <div class="card">
-          <div class="empty">
-            <i data-feather="alert-circle" style="width:48px;height:48px;opacity:.5;color:var(--primary-light)"></i>
-            <br><strong>Gagal memuat profil</strong>
-            <br><span style="font-size:12px;color:var(--text-muted)">Koneksi ke server sedang bermasalah.</span>
-            <br><br>
-            <button class="btn btn-primary" onclick="location.reload()">
-              <i data-feather="refresh-cw" style="width:16px;height:16px"></i> Coba Lagi
-            </button>
-          </div>
+    page.innerHTML = `
+      <div class="card">
+        <div class="empty">
+          <i data-feather="alert-circle" style="width:48px;height:48px;opacity:.5;color:var(--primary-light)"></i>
+          <br><strong>Gagal memuat profil</strong>
+          <br><span style="font-size:12px;color:var(--text-muted)">Koneksi ke server bermasalah. Coba muat ulang.</span>
+          <br><br>
+          <button class="btn btn-primary" onclick="location.reload()">
+            <i data-feather="refresh-cw" style="width:16px;height:16px"></i> Coba Lagi
+          </button>
         </div>
-      `;
-      refreshIcons();
-    }
+      </div>
+    `;
+    refreshIcons();
     return;
   }
-  document.getElementById('profileAvatar').textContent = (state.profile.username||'?')[0].toUpperCase();
-  document.getElementById('profileUsername').textContent = state.profile.username || '-';
-  document.getElementById('profileEmail').textContent = state.profile.email || '-';
-  const roleEl = document.getElementById('profileRole');
+
   const role = state.profile.role || 'member';
-  roleEl.textContent = role === 'owner' ? 'Owner' : role === 'removed' ? 'Removed' : 'Member';
-  roleEl.className = 'member-role ' + (role === 'owner' ? 'owner' : role === 'removed' ? 'removed' : '');
+  const roleLabel = role === 'owner' ? 'Owner' : role === 'removed' ? 'Removed' : 'Member';
+  const roleClass = role === 'owner' ? 'owner' : role === 'removed' ? 'removed' : '';
+  const initial = (state.profile.username || '?')[0].toUpperCase();
+
+  page.innerHTML = `
+    <div class="card">
+      <div class="card-head"><h3>Profil Saya</h3></div>
+      <div class="profile-header">
+        <div class="profile-avatar">${esc(initial)}</div>
+        <div style="flex:1;min-width:0">
+          <div class="profile-username">${esc(state.profile.username || '-')}</div>
+          <div class="profile-email">${esc(state.profile.email || '-')}</div>
+          <span class="member-role ${roleClass}">${roleLabel}</span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Keamanan Akun</h3></div>
+      <button class="menu-btn" id="btn-ubah-username">
+        <span><i data-feather="edit-2" style="width:16px;height:16px;margin-right:8px"></i> Ubah Username</span>
+        <span>›</span>
+      </button>
+      <button class="menu-btn" id="btn-ubah-email">
+        <span><i data-feather="mail" style="width:16px;height:16px;margin-right:8px"></i> Ubah Email</span>
+        <span>›</span>
+      </button>
+      <button class="menu-btn" id="btn-ubah-password">
+        <span><i data-feather="key" style="width:16px;height:16px;margin-right:8px"></i> Ubah Password</span>
+        <span>›</span>
+      </button>
+    </div>
+    <div class="card danger-zone" style="border:1.5px solid var(--red-light)">
+      <div class="card-head"><h3 style="color:#b91c1c">Zona Bahaya</h3></div>
+      <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px;line-height:1.5">Setelah akun dihapus, kamu tidak bisa login lagi. Transaksi lama tetap tersimpan dengan nama username-mu.</p>
+      <button class="btn btn-danger btn-block" id="btn-hapus-akun">
+        <i data-feather="trash-2" style="width:16px;height:16px"></i> Hapus Akun Saya
+      </button>
+    </div>
+  `;
+
+  refreshIcons();
+
+  document.getElementById('btn-ubah-username')?.addEventListener('click', () => {
+    document.getElementById('new-username').value = state.profile.username || '';
+    document.getElementById('err-username').classList.remove('show');
+    openModalEl('modal-username');
+    refreshIcons();
+  });
+  document.getElementById('btn-ubah-email')?.addEventListener('click', () => {
+    document.getElementById('new-email').value = '';
+    document.getElementById('email-password').value = '';
+    document.getElementById('err-email').classList.remove('show');
+    openModalEl('modal-email');
+    refreshIcons();
+  });
+  document.getElementById('btn-ubah-password')?.addEventListener('click', () => {
+    document.getElementById('old-password').value = '';
+    document.getElementById('new-password').value = '';
+    document.getElementById('confirm-password').value = '';
+    document.getElementById('err-password').classList.remove('show');
+    openModalEl('modal-password');
+    refreshIcons();
+  });
+  document.getElementById('btn-hapus-akun')?.addEventListener('click', async () => {
+    if(state.profile.role === 'owner'){
+      const q = query(collection(db, 'users'), where('workspaceId','==',WORKSPACE_ID));
+      const snap = await getDocs(q);
+      const activeOthers = snap.docs.map(d => ({uid:d.id,...d.data()})).filter(u => u.uid !== state.user.uid && u.role !== 'removed');
+      if(activeOthers.length > 0){
+        toast(`Kamu masih owner dan ada ${activeOthers.length} member aktif. Keluarkan member dulu di menu Anggota sebelum hapus akun.`, 'error', 'Tidak Bisa Hapus');
+        return;
+      }
+    }
+    document.getElementById('confirm-delete-text').value = '';
+    document.getElementById('delete-password').value = '';
+    document.getElementById('err-hapus').classList.remove('show');
+    openModalEl('modal-hapus');
+    refreshIcons();
+  });
 }
 
-// Ubah Username
-document.getElementById('btn-ubah-username').addEventListener('click', () => {
-  document.getElementById('new-username').value = state.profile.username || '';
-  document.getElementById('err-username').classList.remove('show');
-  openModalEl('modal-username');
-  refreshIcons();
-});
+// =========================================================
+// MODAL: UBAH USERNAME
+// =========================================================
 document.getElementById('btn-save-username').addEventListener('click', async () => {
   const newUname = document.getElementById('new-username').value.trim().toLowerCase();
   const errEl = document.getElementById('err-username');
@@ -926,14 +984,9 @@ document.getElementById('btn-save-username').addEventListener('click', async () 
   finally{ btn.disabled = false; btn.textContent = orig; }
 });
 
-// Ubah Email
-document.getElementById('btn-ubah-email').addEventListener('click', () => {
-  document.getElementById('new-email').value = '';
-  document.getElementById('email-password').value = '';
-  document.getElementById('err-email').classList.remove('show');
-  openModalEl('modal-email');
-  refreshIcons();
-});
+// =========================================================
+// MODAL: UBAH EMAIL
+// =========================================================
 document.getElementById('btn-save-email').addEventListener('click', async () => {
   const newEmail = document.getElementById('new-email').value.trim();
   const password = document.getElementById('email-password').value;
@@ -962,15 +1015,9 @@ document.getElementById('btn-save-email').addEventListener('click', async () => 
   }finally{ btn.disabled = false; btn.textContent = orig; }
 });
 
-// Ubah Password
-document.getElementById('btn-ubah-password').addEventListener('click', () => {
-  document.getElementById('old-password').value = '';
-  document.getElementById('new-password').value = '';
-  document.getElementById('confirm-password').value = '';
-  document.getElementById('err-password').classList.remove('show');
-  openModalEl('modal-password');
-  refreshIcons();
-});
+// =========================================================
+// MODAL: UBAH PASSWORD
+// =========================================================
 document.getElementById('btn-save-password').addEventListener('click', async () => {
   const oldPass = document.getElementById('old-password').value;
   const newPass = document.getElementById('new-password').value;
@@ -997,23 +1044,9 @@ document.getElementById('btn-save-password').addEventListener('click', async () 
   }finally{ btn.disabled = false; btn.textContent = orig; }
 });
 
-// Hapus Akun
-document.getElementById('btn-hapus-akun').addEventListener('click', async () => {
-  if(state.profile.role === 'owner'){
-    const q = query(collection(db, 'users'), where('workspaceId','==',WORKSPACE_ID));
-    const snap = await getDocs(q);
-    const activeOthers = snap.docs.map(d => ({uid:d.id,...d.data()})).filter(u => u.uid !== state.user.uid && u.role !== 'removed');
-    if(activeOthers.length > 0){
-      toast(`Kamu masih owner dan ada ${activeOthers.length} member aktif. Keluarkan member dulu di menu Anggota sebelum hapus akun.`, 'error', 'Tidak Bisa Hapus');
-      return;
-    }
-  }
-  document.getElementById('confirm-delete-text').value = '';
-  document.getElementById('delete-password').value = '';
-  document.getElementById('err-hapus').classList.remove('show');
-  openModalEl('modal-hapus');
-  refreshIcons();
-});
+// =========================================================
+// MODAL: HAPUS AKUN
+// =========================================================
 document.getElementById('btn-confirm-hapus').addEventListener('click', async () => {
   const confirmText = document.getElementById('confirm-delete-text').value.trim().toUpperCase();
   const password = document.getElementById('delete-password').value;
@@ -1076,6 +1109,7 @@ function updateModalFields(){
 function getKategoriList(){ return modalState.tab==='income'?state.katPemasukan:state.katPengeluaran; }
 function renderKategoriGrid(filter=''){
   const grid=document.getElementById('kategori-grid');
+  if(!grid) return;
   const list=getKategoriList();
   const filtered=filter?list.filter(k=>k.toLowerCase().includes(filter.toLowerCase())):list;
   if(!filtered.length){
@@ -1167,7 +1201,7 @@ modal.addEventListener('click',e=>{ if(e.target===modal) closeModal(); });
 document.getElementById('link-atur-kategori').addEventListener('click',e=>{ e.preventDefault(); closeModal(); goToPage('kategori'); });
 
 // =========================================================
-// FORM PEMASUKAN / PENGELUARAN (Halaman)
+// FORM PEMASUKAN / PENGELUARAN
 // =========================================================
 document.getElementById('formPemasukan').addEventListener('submit',async e=>{
   e.preventDefault(); const form=e.target; clearErrs(form);
@@ -1263,7 +1297,7 @@ document.addEventListener('click',e=>{
 });
 
 // =========================================================
-// LAPORAN
+// LAPORAN & PREVIEW
 // =========================================================
 function getFilteredRows(){
   const jenis=document.getElementById('expJenis').value;
@@ -1283,34 +1317,38 @@ function getFilteredRows(){
   }
   return rows.sort((a,b)=>(a.Tanggal||'').localeCompare(b.Tanggal||''));
 }
+
 function renderPreview(){
+  const box = document.getElementById('tablePreview');
+  if(!box) return;
+
   if(!state.profile){
-    const page = document.getElementById('page-laporan');
-    const previewBox = document.getElementById('tablePreview');
-    if(previewBox){
-      previewBox.innerHTML = `
-        <div class="empty">
-          <i data-feather="alert-circle" style="width:40px;height:40px;opacity:.5;color:var(--primary-light)"></i>
-          <br><strong>Gagal memuat data</strong>
-          <br><span style="font-size:12px;color:var(--text-muted)">Koneksi ke server bermasalah.</span>
-          <br><br>
-          <button class="btn btn-primary btn-sm" onclick="location.reload()">Coba Lagi</button>
-        </div>
-      `;
-      refreshIcons();
-    }
-    return;
-  }
-  const rows=getFilteredRows();
-  document.getElementById('countPreview').textContent=rows.length;
-  const box=document.getElementById('tablePreview');
-  if(!rows.length){
-    box.innerHTML=`<div class="empty"><i data-feather="file-text" style="width:40px;height:40px;opacity:.4"></i><br>Tidak ada data pada filter ini.</div>`;
+    box.innerHTML = `
+      <div class="empty">
+        <i data-feather="alert-circle" style="width:40px;height:40px;opacity:.5;color:var(--primary-light)"></i>
+        <br><strong>Gagal memuat data</strong>
+        <br><span style="font-size:12px;color:var(--text-muted)">Koneksi ke server bermasalah. Coba muat ulang.</span>
+        <br><br>
+        <button class="btn btn-primary btn-sm" onclick="location.reload()">
+          <i data-feather="refresh-cw" style="width:14px;height:14px"></i> Coba Lagi
+        </button>
+      </div>
+    `;
     refreshIcons();
     return;
   }
-  const total=rows.reduce((s,r)=>s+r.Jumlah,0);
-  box.innerHTML=`<div class="table-wrap"><table>
+
+  const rows = getFilteredRows();
+  const countEl = document.getElementById('countPreview');
+  if(countEl) countEl.textContent = rows.length;
+
+  if(!rows.length){
+    box.innerHTML = `<div class="empty"><i data-feather="file-text" style="width:40px;height:40px;opacity:.4"></i><br>Tidak ada data pada filter ini.</div>`;
+    refreshIcons();
+    return;
+  }
+  const total = rows.reduce((s,r)=>s+r.Jumlah,0);
+  box.innerHTML = `<div class="table-wrap"><table>
     <thead><tr><th>Tanggal</th><th>Jenis</th><th>Keterangan</th><th>Kategori</th><th style="text-align:right">Jumlah</th></tr></thead>
     <tbody>
       ${rows.map(r=>`<tr>
@@ -1329,6 +1367,7 @@ function renderPreview(){
 }
 document.getElementById('btnPreview').addEventListener('click',renderPreview);
 document.getElementById('btnExport').addEventListener('click',()=>{
+  if(!state.profile){ toast('Data belum siap. Coba muat ulang.', 'error'); return; }
   const rows=getFilteredRows();
   if(!rows.length){ toast('Tidak ada data untuk diexport.','error'); return; }
   try{
@@ -1351,7 +1390,7 @@ document.getElementById('outTanggal').value=todayISO();
 document.getElementById('entry-tanggal').value=todayISO();
 
 // =========================================================
-// SERVICE WORKER (PWA)
+// SERVICE WORKER
 // =========================================================
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -1360,3 +1399,9 @@ if ('serviceWorker' in navigator) {
       .catch(err => console.warn('[PWA] Gagal daftar Service Worker:', err));
   });
 }
+
+// =========================================================
+// INIT THEME & ICONS
+// =========================================================
+initTheme();
+refreshIcons();
