@@ -96,6 +96,7 @@
       <button data-page="pemasukan"><i data-feather="download" class="ico"></i> Input Pemasukan</button>
       <button data-page="pengeluaran"><i data-feather="upload" class="ico"></i> Input Pengeluaran</button>
       <button data-page="kategori"><i data-feather="tag" class="ico"></i> Kategori</button>
+      <button data-page="budgeting"><i data-feather="briefcase" class="ico"></i> Budgeting</button>
       <button data-page="anggota"><i data-feather="users" class="ico"></i> Anggota</button>
       <div class="nav-section">AKUN</div>
       <button data-page="profil"><i data-feather="user" class="ico"></i> Profil Saya</button>
@@ -263,7 +264,82 @@
         <div id="anggotaList"></div>
       </div>
     </section>
+    <!-- BUDGETING -->
+    <section class="page" id="page-budgeting">
+      <div class="card">
+        <div class="card-head">
+          <h3>💼 Budgeting</h3>
+        </div>
+        <div class="budget-tabs" id="budgeting-tabs">
+          <button class="budget-tab active" data-btab="wallets">
+            <i data-feather="briefcase" style="width:14px;height:14px"></i> Dompet
+          </button>
+          <button class="budget-tab" data-btab="alokasi">
+            <i data-feather="pie-chart" style="width:14px;height:14px"></i> Alokasi
+          </button>
+          <button class="budget-tab" data-btab="progress">
+            <i data-feather="activity" style="width:14px;height:14px"></i> Progress
+          </button>
+          <button class="budget-tab" data-btab="laporan">
+            <i data-feather="bar-chart-2" style="width:14px;height:14px"></i> Laporan
+          </button>
+        </div>
+      </div>
 
+      <!-- Panel: Dompet -->
+      <div class="budgeting-panel active" data-btab="wallets">
+        <div class="card">
+          <div class="card-head">
+            <h3>Daftar Dompet</h3>
+            <button class="btn btn-primary btn-sm" id="btn-add-wallet">
+              <i data-feather="plus" style="width:14px;height:14px"></i> Tambah Dompet
+            </button>
+          </div>
+          <div id="wallet-list">
+            <div class="empty">
+              <i data-feather="briefcase" style="width:40px;height:40px;opacity:.4"></i>
+              <br>Memuat dompet...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel: Alokasi (placeholder) -->
+      <div class="budgeting-panel" data-btab="alokasi">
+        <div class="card">
+          <div class="card-head"><h3>📊 Alokasi Budget</h3></div>
+          <div class="empty">
+            <i data-feather="pie-chart" style="width:40px;height:40px;opacity:.4"></i>
+            <br>Fitur Alokasi akan hadir di Fase 2.
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel: Progress (placeholder) -->
+      <div class="budgeting-panel" data-btab="progress">
+        <div class="card">
+          <div class="card-head"><h3>📈 Progress Budget</h3></div>
+          <div class="empty">
+            <i data-feather="activity" style="width:40px;height:40px;opacity:.4"></i>
+            <br>Fitur Progress akan hadir di Fase 3.
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel: Laporan (placeholder) -->
+      <div class="budgeting-panel" data-btab="laporan">
+        <div class="card">
+          <div class="card-head"><h3>📊 Laporan Budget</h3></div>
+          <div class="empty">
+            <i data-feather="bar-chart-2" style="width:40px;height:40px;opacity:.4"></i>
+            <br>Fitur Laporan akan hadir di Fase 3.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ANGGOTA -->
+    <section class="page" id="page-anggota">
     <!-- PROFIL -->
     <section class="page" id="page-profil">
       <div class="card">
@@ -434,7 +510,85 @@
     <div class="modal-footer"><button class="btn-save-entry btn-danger-solid" id="btn-confirm-hapus">Hapus Akun Permanen</button></div>
   </div>
 </div>
+<!-- ============ MODAL WALLET (Tambah/Edit Dompet) ============ -->
+<div class="modal-overlay" id="modal-wallet" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="wallet-modal-title">Tambah Dompet</h2>
+      <button class="modal-close" id="modal-wallet-close"><i data-feather="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Nama Dompet <span class="req">*</span></label>
+        <input type="text" id="wallet-name" placeholder="cth: Kebutuhan Utama" maxlength="40">
+      </div>
 
+      <div class="field">
+        <label>Deskripsi</label>
+        <input type="text" id="wallet-description" placeholder="cth: Makan, transport, tagihan" maxlength="100">
+      </div>
+
+      <div class="field">
+        <label>Warna</label>
+        <div class="color-picker" id="wallet-color-picker">
+          <button type="button" class="color-opt selected" data-color="#3B2A20" style="background:#3B2A20"></button>
+          <button type="button" class="color-opt" data-color="#7B5E4A" style="background:#7B5E4A"></button>
+          <button type="button" class="color-opt" data-color="#A67C52" style="background:#A67C52"></button>
+          <button type="button" class="color-opt" data-color="#8B6B4A" style="background:#8B6B4A"></button>
+          <button type="button" class="color-opt" data-color="#5A4536" style="background:#5A4536"></button>
+          <button type="button" class="color-opt" data-color="#D1B89A" style="background:#D1B89A"></button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Budget (Rp) <span class="req">*</span></label>
+        <input type="number" id="wallet-budget" placeholder="cth: 3000000" min="0" step="any">
+      </div>
+
+      <div class="field">
+        <label>Periode</label>
+        <select id="wallet-period">
+          <option value="monthly">Bulanan</option>
+          <option value="weekly">Mingguan</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Prioritas</label>
+        <select id="wallet-priority">
+          <option value="1">🥇 Kebutuhan Utama</option>
+          <option value="2">🥈 Kebutuhan Sekunder</option>
+          <option value="3">🥉 Keinginan</option>
+          <option value="4">💰 Tabungan</option>
+          <option value="5">💳 Utang</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="switch-label">
+          <input type="checkbox" id="wallet-rollover">
+          <span>Roll-over surplus ke bulan berikutnya</span>
+        </label>
+        <div class="field-hint">Kalau aktif, sisa budget bulan ini akan ditambah ke budget bulan depan.</div>
+      </div>
+
+      <div class="field">
+        <label>Kategori Terkait</label>
+        <div class="field-hint" style="margin-bottom:8px">Pilih kategori yang termasuk dalam dompet ini.</div>
+        <div class="cat-checkbox-list" id="wallet-categories-list"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" id="btn-cancel-wallet" style="flex:1">Batal</button>
+        <button class="btn-save-entry" id="btn-save-wallet" style="flex:2">Simpan</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toastBox"></div>
+<script type="module" src="app.js"></script>
 <div id="toastBox"></div>
 <script type="module" src="app.js"></script>
 </body>
