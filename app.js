@@ -1,9 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, EmailAuthProvider, reauthenticateWithCredential, updatePassword, verifyBeforeUpdateEmail, deleteUser } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy, getDoc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { initBudgeting } from './budgeting.js';
 
-// ====== GANTI DENGAN CONFIG MILIKMU ======
 const firebaseConfig = {
   apiKey: "AIzaSyAnadqK4sTVRyIyoDEJJzhKPH1GNDZ4_kg",
   authDomain: "catatan-keuangan-e9041.firebaseapp.com",
@@ -39,9 +38,6 @@ const state = {
   detailFilter: 'semua', detailSearch: '', dashboardPeriode: 'semua'
 };
 
-// =========================================================
-// UTILITAS
-// =========================================================
 const fmtRp = n => 'Rp ' + (Number(n)||0).toLocaleString('id-ID',{maximumFractionDigits:0});
 const fmtRpShort = n => {
   n = Number(n)||0;
@@ -56,9 +52,8 @@ const fmtBulan = k => { const [y,m]=k.split('-'); return BULAN[parseInt(m,10)-1]
 const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 const todayISO = () => { const d=new Date(); const off=d.getTimezoneOffset(); return new Date(d.getTime()-off*60000).toISOString().slice(0,10); };
 
-// Splash screen control
+// Splash
 const SPLASH_MIN_DURATION = 500;
-const SPLASH_MAX_DURATION = 15000;
 const splashStartTime = Date.now();
 let splashHidden = false;
 function hideSplash(){
@@ -75,28 +70,20 @@ function hideSplash(){
 }
 setTimeout(() => {
   if(!splashHidden){
-    console.warn('[Splash] Fallback timeout — tampilkan login sebagai default');
     const authPage = document.getElementById('auth-page');
     if(authPage) authPage.style.display = 'flex';
     hideSplash();
   }
-}, SPLASH_MAX_DURATION);
+}, 8000);
 
-// =========================================================
-// FEATHER ICONS
-// =========================================================
 function refreshIcons(){
   if(window.feather) feather.replace({ 'stroke-width': 2 });
 }
 
-// =========================================================
-// DARK MODE
-// =========================================================
 function initTheme(){
   const saved = localStorage.getItem('theme');
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const theme = saved || (prefersDark ? 'dark' : 'light');
-  setTheme(theme);
+  setTheme(saved || (prefersDark ? 'dark' : 'light'));
 }
 function setTheme(theme){
   document.documentElement.setAttribute('data-theme', theme);
@@ -108,18 +95,13 @@ function setTheme(theme){
   }
   const meta = document.querySelector('meta[name="theme-color"]');
   if(meta) meta.setAttribute('content', theme === 'dark' ? '#1A1410' : '#3B2A20');
-  if(state.user && state.profile){
-    try{ renderCharts(); }catch(e){}
-  }
+  if(state.user && state.profile){ try{ renderCharts(); }catch(e){} }
 }
 function toggleTheme(){
   const current = document.documentElement.getAttribute('data-theme');
   setTheme(current === 'dark' ? 'light' : 'dark');
 }
 
-// =========================================================
-// TOAST
-// =========================================================
 function toast(msg, type='success', title=null){
   const box=document.getElementById('toastBox');
   const el=document.createElement('div');
@@ -132,9 +114,6 @@ function toast(msg, type='success', title=null){
   setTimeout(()=>{el.classList.add('hide');setTimeout(()=>el.remove(),300);}, type==='error'?5200:3400);
 }
 
-// =========================================================
-// FORM HELPERS
-// =========================================================
 function setErr(id,msg){
   const i=document.getElementById(id);
   const e=document.getElementById('err-'+id);
@@ -145,12 +124,9 @@ function clearErrs(form){
   form.querySelectorAll('.invalid').forEach(el=>el.classList.remove('invalid'));
   form.querySelectorAll('.error-msg').forEach(el=>{el.textContent='';el.classList.remove('show');});
 }
-function openModalEl(id){ document.getElementById(id).style.display='flex'; document.body.style.overflow='hidden'; }
-function closeModalEl(id){ document.getElementById(id).style.display='none'; document.body.style.overflow=''; }
+function openModalEl(id){ const el=document.getElementById(id); if(el){el.style.display='flex';document.body.style.overflow='hidden';} }
+function closeModalEl(id){ const el=document.getElementById(id); if(el){el.style.display='none';document.body.style.overflow='';} }
 
-// =========================================================
-// FIRESTORE
-// =========================================================
 async function loadCol(name){
   if(!state.profile) return [];
   try{
@@ -162,17 +138,12 @@ async function loadCol(name){
 async function saveCol(name, data){
   if(!state.profile) throw new Error("Belum login");
   await addDoc(collection(db, name), {
-    ...data,
-    workspaceId: state.profile.workspaceId,
-    createdBy: state.profile.username,
-    createdAt: serverTimestamp()
+    ...data, workspaceId: state.profile.workspaceId,
+    createdBy: state.profile.username, createdAt: serverTimestamp()
   });
 }
 async function delCol(name, id){ await deleteDoc(doc(db, name, id)); }
 
-// =========================================================
-// REGISTER
-// =========================================================
 async function doRegister(){
   const username = document.getElementById('reg-username').value.trim().toLowerCase();
   const email = document.getElementById('reg-email').value.trim();
@@ -180,33 +151,27 @@ async function doRegister(){
   const errBox = document.getElementById('reg-error');
   const btn = document.getElementById('btn-register');
   errBox.classList.remove('show'); errBox.textContent = '';
-
   if(!username){ errBox.textContent='Username wajib diisi.'; errBox.classList.add('show'); return; }
-  if(!/^[a-z0-9_]{3,20}$/.test(username)){ errBox.textContent='Username 3-20 karakter, huruf kecil/angka/underscore.'; errBox.classList.add('show'); return; }
+  if(!/^[a-z0-9_]{3,20}$/.test(username)){ errBox.textContent='Username 3-20 karakter huruf kecil/angka/underscore.'; errBox.classList.add('show'); return; }
   if(!email){ errBox.textContent='Email wajib diisi.'; errBox.classList.add('show'); return; }
   if(!password || password.length < 6){ errBox.textContent='Password minimal 6 karakter.'; errBox.classList.add('show'); return; }
-
   btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Memproses...';
   try{
     const unameSnap = await getDoc(doc(db, 'usernames', username));
-    if(unameSnap.exists()) throw new Error('Username sudah dipakai. Pilih yang lain.');
-
+    if(unameSnap.exists()) throw new Error('Username sudah dipakai.');
     const wsSnap = await getDoc(doc(db, 'workspaces', WORKSPACE_ID));
     let isOwner = false, members = [];
     if(wsSnap.exists()){
       members = wsSnap.data().members || [];
       if(members.length >= MAX_MEMBERS) throw new Error(`Kuota workspace penuh (max ${MAX_MEMBERS} akun).`);
     } else { isOwner = true; }
-
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     const uid = cred.user.uid;
-
     await setDoc(doc(db, 'users', uid), {
       uid, email, username, workspaceId: WORKSPACE_ID,
       role: isOwner ? 'owner' : 'member',
       joinedAt: serverTimestamp(), kickedAt: null
     });
-
     if(isOwner){
       await setDoc(doc(db, 'workspaces', WORKSPACE_ID), {
         name: 'Workspace Utama', ownerUid: uid, members: [uid], createdAt: serverTimestamp()
@@ -214,9 +179,7 @@ async function doRegister(){
     } else {
       await updateDoc(doc(db, 'workspaces', WORKSPACE_ID), { members: [...members, uid] });
     }
-
     await setDoc(doc(db, 'usernames', username), { email, uid });
-
     toast('Akun berhasil dibuat! Silakan login.', 'success');
     document.getElementById('login-username').value = username;
     document.getElementById('register-form').style.display = 'none';
@@ -234,9 +197,6 @@ async function doRegister(){
   }finally{ btn.disabled = false; btn.textContent = orig; }
 }
 
-// =========================================================
-// LOGIN
-// =========================================================
 async function doLogin(){
   const username = document.getElementById('login-username').value.trim().toLowerCase();
   const password = document.getElementById('login-password').value;
@@ -245,7 +205,6 @@ async function doLogin(){
   errBox.classList.remove('show'); errBox.textContent = '';
   if(!username){ errBox.textContent='Username wajib diisi.'; errBox.classList.add('show'); return; }
   if(!password){ errBox.textContent='Password wajib diisi.'; errBox.classList.add('show'); return; }
-
   btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Memproses...';
   try{
     const unameSnap = await getDoc(doc(db, 'usernames', username));
@@ -253,16 +212,12 @@ async function doLogin(){
     await signInWithEmailAndPassword(auth, unameSnap.data().email, password);
   }catch(e){
     let msg = e.message;
-    if(['auth/invalid-credential','auth/wrong-password','auth/user-not-found','auth/invalid-login-credentials'].includes(e.code)) msg = 'Username atau password salah.';
-    else if(e.code === 'auth/too-many-requests') msg = 'Terlalu banyak percobaan. Coba nanti.';
+    if(['auth/invalid-credential','auth/wrong-password','auth/user-not-found'].includes(e.code)) msg = 'Username atau password salah.';
     else if(e.code === 'auth/network-request-failed') msg = 'Koneksi internet bermasalah.';
     errBox.textContent = msg; errBox.classList.add('show');
   }finally{ btn.disabled = false; btn.textContent = orig; }
 }
 
-// =========================================================
-// AUTH LISTENERS
-// =========================================================
 document.getElementById('btn-login').addEventListener('click', doLogin);
 document.getElementById('btn-register').addEventListener('click', doRegister);
 document.getElementById('login-password').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
@@ -280,19 +235,13 @@ document.getElementById('toggle-to-login').addEventListener('click', e => {
 document.getElementById('btn-logout-removed').addEventListener('click', () => signOut(auth));
 ['login-username','login-password'].forEach(id => document.getElementById(id).addEventListener('input', () => document.getElementById('login-error').classList.remove('show')));
 ['reg-username','reg-email','reg-password'].forEach(id => document.getElementById(id).addEventListener('input', () => document.getElementById('reg-error').classList.remove('show')));
-
 document.getElementById('btn-theme-toggle').addEventListener('click', toggleTheme);
 
-// =========================================================
-// AUTH STATE
-// =========================================================
 onAuthStateChanged(auth, async (user) => {
   const authPage = document.getElementById('auth-page');
   const appLayout = document.getElementById('app-layout');
   const removedPage = document.getElementById('removed-page');
-
   if(!user){
-    console.log('[Auth] User tidak terautentikasi');
     state.user = null; state.profile = null; state.workspace = null;
     authPage.style.display = 'flex';
     appLayout.style.display = 'none';
@@ -301,15 +250,11 @@ onAuthStateChanged(auth, async (user) => {
     hideSplash();
     return;
   }
-
-  console.log('[Auth] User terautentikasi:', user.email);
   state.user = user;
   try{
     const userSnap = await getDoc(doc(db, 'users', user.uid));
-    if(!userSnap.exists()){ await handleLegacyAccount(user); return; }
-
+    if(!userSnap.exists()){ await signOut(auth); hideSplash(); return; }
     state.profile = userSnap.data();
-
     if(state.profile.role === 'removed'){
       authPage.style.display = 'none';
       appLayout.style.display = 'none';
@@ -318,16 +263,13 @@ onAuthStateChanged(auth, async (user) => {
       hideSplash();
       return;
     }
-
     const wsSnap = await getDoc(doc(db, 'workspaces', state.profile.workspaceId));
     if(!wsSnap.exists()){ toast('Workspace tidak ditemukan.', 'error'); await signOut(auth); return; }
     state.workspace = { id: wsSnap.id, ...wsSnap.data() };
-
     state.katPemasukan = JSON.parse(localStorage.getItem('katPemasukan') || JSON.stringify(DEF_KAT_M));
     state.katPengeluaran = JSON.parse(localStorage.getItem('katPengeluaran') || JSON.stringify(DEF_KAT_K));
     state.pemasukan = await loadCol('pemasukan');
     state.pengeluaran = await loadCol('pengeluaran');
-
     authPage.style.display = 'none';
     removedPage.style.display = 'none';
     appLayout.style.display = 'block';
@@ -335,24 +277,12 @@ onAuthStateChanged(auth, async (user) => {
     refreshIcons();
     toast(`Selamat datang, ${state.profile.username}!`, 'success');
     hideSplash();
-
-    // INIT BUDGETING
     initBudgeting({
-      state: state,
-      db: db,
+      state: state, db: db,
       workspaceId: state.profile.workspaceId,
       userId: state.user.uid,
-      utils: {
-        fmtRp: fmtRp,
-        fmtRpShort: fmtRpShort,
-        esc: esc,
-        todayISO: todayISO,
-        toast: toast,
-        refreshIcons: refreshIcons,
-        getKatIcon: getKatIcon
-      }
+      utils: { fmtRp, fmtRpShort, esc, todayISO, toast, refreshIcons, getKatIcon }
     });
-
   }catch(e){
     console.error('[Auth Error]', e);
     toast('Error: ' + e.message, 'error');
@@ -360,63 +290,6 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// =========================================================
-// MIGRASI AKUN LAMA
-// =========================================================
-async function handleLegacyAccount(user){
-  try{
-    toast('Mendeteksi akun lama, migrasi...', 'warn', 'Mohon Tunggu');
-    let baseUsername = user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-    if(baseUsername.length < 3) baseUsername = 'user' + baseUsername;
-    let username = baseUsername, attempt = 0;
-    while(true){
-      const snap = await getDoc(doc(db, 'usernames', username));
-      if(!snap.exists()) break;
-      attempt++;
-      username = baseUsername + attempt;
-      if(attempt > 99){ username = 'user' + Date.now(); break; }
-    }
-    const wsSnap = await getDoc(doc(db, 'workspaces', WORKSPACE_ID));
-    const isOwner = !wsSnap.exists();
-    const members = isOwner ? [] : (wsSnap.data().members || []);
-
-    await setDoc(doc(db, 'users', user.uid), {
-      uid: user.uid, email: user.email, username, workspaceId: WORKSPACE_ID,
-      role: isOwner ? 'owner' : 'member', joinedAt: serverTimestamp(), kickedAt: null, legacy: true
-    });
-
-    if(isOwner){
-      await setDoc(doc(db, 'workspaces', WORKSPACE_ID), {
-        name: 'Workspace Utama', ownerUid: user.uid, members: [user.uid], createdAt: serverTimestamp()
-      });
-    } else {
-      await updateDoc(doc(db, 'workspaces', WORKSPACE_ID), { members: [...members, user.uid] });
-    }
-
-    await setDoc(doc(db, 'usernames', username), { email: user.email, uid: user.uid });
-
-    for(const collName of ['pemasukan','pengeluaran']){
-      try{
-        const q = query(collection(db, collName), where('userId','==',user.uid));
-        const snap = await getDocs(q);
-        for(const d of snap.docs){
-          await updateDoc(doc(db, collName, d.id), { workspaceId: WORKSPACE_ID, createdBy: username });
-        }
-      }catch(e){ console.error('Migrasi '+collName, e); }
-    }
-
-    toast(`Migrasi sukses! Username kamu: ${username}. Refresh halaman.`, 'success', 'Migrasi Berhasil');
-    setTimeout(() => window.location.reload(), 2500);
-  }catch(e){
-    console.error(e);
-    toast('Migrasi gagal: ' + e.message, 'error');
-    await signOut(auth);
-  }
-}
-
-// =========================================================
-// NAVIGASI
-// =========================================================
 const sidebar = document.getElementById('sidebar');
 const overlay = document.getElementById('sidebar-overlay');
 const openSidebar = () => { sidebar.classList.add('open'); overlay.classList.add('show'); };
@@ -427,39 +300,23 @@ overlay.addEventListener('click', closeSidebar);
 const PAGE_TITLES = {
   dashboard:'Dashboard', detail:'Detail Transaksi', pemasukan:'Pemasukan',
   pengeluaran:'Pengeluaran', kategori:'Kategori', budgeting:'Budgeting',
-  anggota:'Anggota', profil:'Profil Saya', laporan:'Laporan & Export'
+  anggota:'Anggota'
 };
-// Auto-create section kalau tidak ada di HTML
-function ensurePageSection(page){
-  const pageId = 'page-' + page;
-  let section = document.getElementById(pageId);
-  if(!section){
-    const main = document.querySelector('main.main');
-    if(!main) return null;
-    section = document.createElement('section');
-    section.className = 'page';
-    section.id = pageId;
-    main.appendChild(section);
-    console.log('[AutoFix] Section dibuat otomatis:', pageId);
-  }
-  return section;
-}
 
 function goToPage(page){
-  ensurePageSection(page);
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
   document.querySelectorAll('#bottom-nav button[data-page]').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => { p.classList.remove('active'); p.style.display = 'none'; });
   const t = document.getElementById('page-'+page);
-  if(t) t.classList.add('active');
+  if(t){ t.classList.add('active'); t.style.display = 'block'; }
   document.getElementById('topbar-title').textContent = PAGE_TITLES[page]||'';
   window.scrollTo({top:0,behavior:'smooth'});
   closeSidebar();
-  if(page==='dashboard') renderCharts();
-  if(page==='laporan') renderPreview();
-  if(page==='detail') renderDetail();
-  if(page==='anggota') renderAnggota();
-  if(page==='profil') renderProfil();
+  try{
+    if(page==='dashboard') renderCharts();
+    if(page==='detail') renderDetail();
+    if(page==='anggota') renderAnggota();
+  }catch(e){ console.error(e); }
   refreshIcons();
 }
 
@@ -468,9 +325,6 @@ document.getElementById('bottom-nav').addEventListener('click', e=>{ const b=e.t
 document.getElementById('link-ke-detail').addEventListener('click', e=>{ e.preventDefault(); goToPage('detail'); });
 document.getElementById('btn-logout').addEventListener('click', () => { closeSidebar(); signOut(auth); });
 
-// =========================================================
-// RENDER KATEGORI
-// =========================================================
 function renderKatSelects(){
   const build=(sel,list)=>{
     if(!sel) return;
@@ -499,20 +353,19 @@ function renderKatLists(){
   draw('listKatKeluar',state.katPengeluaran,'keluar');
 }
 
-// =========================================================
-// FILTER PERIODE
-// =========================================================
 function getPeriodeRange(){
   const now = new Date();
   if(state.dashboardPeriode === 'bulan-ini'){
-    const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
-    const end = new Date(now.getFullYear(), now.getMonth()+1, 0).toISOString().slice(0,10);
-    return {start, end};
+    return {
+      start: new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10),
+      end: new Date(now.getFullYear(), now.getMonth()+1, 0).toISOString().slice(0,10)
+    };
   }
   if(state.dashboardPeriode === 'tahun-ini'){
-    const start = new Date(now.getFullYear(), 0, 1).toISOString().slice(0,10);
-    const end = new Date(now.getFullYear(), 11, 31).toISOString().slice(0,10);
-    return {start, end};
+    return {
+      start: new Date(now.getFullYear(), 0, 1).toISOString().slice(0,10),
+      end: new Date(now.getFullYear(), 11, 31).toISOString().slice(0,10)
+    };
   }
   return {start:null, end:null};
 }
@@ -522,9 +375,6 @@ function filterByPeriode(arr){
   return arr.filter(r => r.tanggal >= start && r.tanggal <= end);
 }
 
-// =========================================================
-// STATS
-// =========================================================
 function renderStats(){
   const pem = filterByPeriode(state.pemasukan);
   const peng = filterByPeriode(state.pengeluaran);
@@ -540,9 +390,6 @@ function renderStats(){
   if(el('statSaldoSub')) el('statSaldoSub').textContent=saldo>=0?'Surplus':'Defisit';
 }
 
-// =========================================================
-// TABLES
-// =========================================================
 function renderSimpleList(containerId, arr, type){
   const box = document.getElementById(containerId);
   if(!box) return;
@@ -562,7 +409,7 @@ function renderSimpleList(containerId, arr, type){
       <div>
         <div class="tx-amount ${type==='masuk'?'in':'out'}">${type==='masuk'?'+':'−'} ${fmtRpShort(r.jumlah)}</div>
         <div class="tx-date">${fmtTanggalShort(r.tanggal)}</div>
-        <button class="tx-delete" data-del="${type==='masuk'?'pemasukan':'pengeluaran'}" data-id="${r.id}" title="Hapus"><i data-feather="trash-2"></i></button>
+        <button class="tx-delete" data-del="${type==='masuk'?'pemasukan':'pengeluaran'}" data-id="${r.id}"><i data-feather="trash-2"></i></button>
       </div>
     </div>`).join('')}</div>`;
   refreshIcons();
@@ -603,9 +450,6 @@ function renderTables(){
   refreshIcons();
 }
 
-// =========================================================
-// DETAIL
-// =========================================================
 function renderDetail(){
   let all = [
     ...state.pemasukan.map(r=>({...r, _tipe:'masuk', _keterangan:r.kegunaan})),
@@ -665,16 +509,12 @@ document.getElementById('detail-search').addEventListener('input', e => {
   renderDetail();
 });
 
-// =========================================================
-// CHART
-// =========================================================
 function renderCharts(){
   if(typeof Chart === 'undefined') return;
   ['chartBulanan','chartKatKeluar','chartKatMasuk'].forEach(id=>{
     const c=document.getElementById(id);
     if(c){ const inst=Chart.getChart(c); if(inst) inst.destroy(); }
   });
-
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   const textColor = isDark ? '#C9B29A' : '#7B5E4A';
   const gridColor = isDark ? 'rgba(201,178,154,.1)' : 'rgba(123,94,74,.1)';
@@ -688,9 +528,9 @@ function renderCharts(){
   peng.forEach(r=>{const k=(r.tanggal||'').slice(0,7); if(!k)return; map[k]=map[k]||{in:0,out:0}; map[k].out+=Number(r.jumlah||0);});
   const keys=Object.keys(map).sort().slice(-12);
 
-  const chartBulananEl = document.getElementById('chartBulanan');
-  if(chartBulananEl){
-    new Chart(chartBulananEl,{
+  const cb = document.getElementById('chartBulanan');
+  if(cb){
+    new Chart(cb,{
       type:'bar',
       data:{
         labels:keys.length?keys.map(fmtBulan):['Belum ada'],
@@ -701,20 +541,10 @@ function renderCharts(){
       },
       options:{
         responsive:true,maintainAspectRatio:false,
-        plugins:{
-          legend:{position:'top',labels:{color:textColor,font:{family:'Plus Jakarta Sans',size:12,weight:'600'},usePointStyle:true,boxWidth:10}},
-          tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${fmtRp(c.parsed.y)}`}}
-        },
+        plugins:{legend:{position:'top',labels:{color:textColor,font:{family:'Plus Jakarta Sans',size:12,weight:'600'},usePointStyle:true,boxWidth:10}}},
         scales:{
-          y:{
-            beginAtZero:true,
-            ticks:{color:textColor,font:{family:'Plus Jakarta Sans',size:11},callback:v=>fmtRpShort(v)},
-            grid:{color:gridColor}
-          },
-          x:{
-            ticks:{color:textColor,font:{family:'Plus Jakarta Sans',size:11}},
-            grid:{display:false}
-          }
+          y:{beginAtZero:true,ticks:{color:textColor,font:{family:'Plus Jakarta Sans',size:11},callback:v=>fmtRpShort(v)},grid:{color:gridColor}},
+          x:{ticks:{color:textColor,font:{family:'Plus Jakarta Sans',size:11}},grid:{display:false}}
         }
       }
     });
@@ -730,19 +560,11 @@ function renderCharts(){
       type:'doughnut',
       data:{
         labels:lbl.length?lbl:['Belum ada'],
-        datasets:[{
-          data:val.length?val:[1],
-          backgroundColor:lbl.length?pal:['#e5e7eb'],
-          borderWidth:3,
-          borderColor:isDark?'#2A1E16':'#fff'
-        }]
+        datasets:[{data:val.length?val:[1],backgroundColor:lbl.length?pal:['#e5e7eb'],borderWidth:3,borderColor:isDark?'#2A1E16':'#fff'}]
       },
       options:{
         responsive:true,maintainAspectRatio:false,cutout:'62%',
-        plugins:{
-          legend:{position:'bottom',labels:{padding:12,color:textColor,font:{family:'Plus Jakarta Sans',size:11,weight:'600'},usePointStyle:true,boxWidth:8}},
-          tooltip:{callbacks:{label:c=>`${c.label}: ${fmtRp(c.parsed)}`}}
-        }
+        plugins:{legend:{position:'bottom',labels:{padding:12,color:textColor,font:{family:'Plus Jakarta Sans',size:11,weight:'600'},usePointStyle:true,boxWidth:8}}}
       }
     });
   };
@@ -750,9 +572,6 @@ function renderCharts(){
   buildD('chartKatMasuk',pem,['#16a34a','#22c55e','#84cc16','#14b8a6','#06b6d4','#3b82f6','#6366f1','#8b5cf6','#a855f7','#ec4899']);
 }
 
-// =========================================================
-// RENDER ALL
-// =========================================================
 function renderAll(){
   renderKatSelects();
   renderKatLists();
@@ -761,8 +580,6 @@ function renderAll(){
   renderCharts();
   renderDetail();
   renderAnggota();
-  renderProfil();
-  renderPreview();
   refreshIcons();
 }
 
@@ -776,16 +593,14 @@ document.querySelectorAll('#page-dashboard .chip').forEach(btn => {
   });
 });
 
-// =========================================================
-// ANGGOTA
-// =========================================================
 async function renderAnggota(){
   if(!state.workspace || !state.profile) return;
   const wsInput = document.getElementById('ws-name-input');
   if(!wsInput) return;
   wsInput.value = state.workspace.name || '';
   const isOwner = state.profile.role === 'owner';
-  document.getElementById('btn-save-ws-name').style.display = isOwner ? 'inline-flex' : 'none';
+  const btnSave = document.getElementById('btn-save-ws-name');
+  if(btnSave) btnSave.style.display = isOwner ? 'inline-flex' : 'none';
   wsInput.disabled = !isOwner;
   const box = document.getElementById('anggotaList');
   if(!box) return;
@@ -805,7 +620,7 @@ async function renderAnggota(){
       return `<div class="member-item">
         <div class="member-avatar ${isOwnerRow?'owner':''}">${esc((u.username||'?')[0])}</div>
         <div class="member-info">
-          <div class="member-name">${esc(u.username||'(tanpa username)')} ${isMe?'<span style="color:var(--text-muted);font-weight:400">(Anda)</span>':''}<span class="member-role ${isOwnerRow?'owner':''}">${isOwnerRow?'Owner':'Member'}</span></div>
+          <div class="member-name">${esc(u.username||'-')} ${isMe?'<span style="color:var(--text-muted);font-weight:400">(Anda)</span>':''}<span class="member-role ${isOwnerRow?'owner':''}">${isOwnerRow?'Owner':'Member'}</span></div>
           <div class="member-username">${esc(u.email||'')}</div>
         </div>
         <div class="member-actions">${canKick?`<button class="btn-kick" data-kick="${u.uid}">Keluarkan</button>`:''}</div>
@@ -867,236 +682,6 @@ document.getElementById('btn-save-ws-name').addEventListener('click', async () =
   }catch(e){ toast('Gagal: ' + e.message, 'error'); }
 });
 
-// =========================================================
-// PROFIL (Rebuilt from JS)
-// =========================================================
-function renderProfil(){
-  const page = ensurePageSection('profil');
-  if(!page) return;
-
-  if(!state.profile){
-    page.innerHTML = `
-      <div class="card">
-        <div class="empty">
-          <i data-feather="alert-circle" style="width:48px;height:48px;opacity:.5;color:var(--primary-light)"></i>
-          <br><strong>Gagal memuat profil</strong>
-          <br><span style="font-size:12px;color:var(--text-muted)">Koneksi ke server bermasalah. Coba muat ulang.</span>
-          <br><br>
-          <button class="btn btn-primary" onclick="location.reload()">
-            <i data-feather="refresh-cw" style="width:16px;height:16px"></i> Coba Lagi
-          </button>
-        </div>
-      </div>
-    `;
-    refreshIcons();
-    return;
-  }
-
-  const role = state.profile.role || 'member';
-  const roleLabel = role === 'owner' ? 'Owner' : role === 'removed' ? 'Removed' : 'Member';
-  const roleClass = role === 'owner' ? 'owner' : role === 'removed' ? 'removed' : '';
-  const initial = (state.profile.username || '?')[0].toUpperCase();
-
-  page.innerHTML = `
-    <div class="card">
-      <div class="card-head"><h3>Profil Saya</h3></div>
-      <div class="profile-header">
-        <div class="profile-avatar">${esc(initial)}</div>
-        <div style="flex:1;min-width:0">
-          <div class="profile-username">${esc(state.profile.username || '-')}</div>
-          <div class="profile-email">${esc(state.profile.email || '-')}</div>
-          <span class="member-role ${roleClass}">${roleLabel}</span>
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-head"><h3>Keamanan Akun</h3></div>
-      <button class="menu-btn" id="btn-ubah-username">
-        <span><i data-feather="edit-2" style="width:16px;height:16px;margin-right:8px"></i> Ubah Username</span>
-        <span>›</span>
-      </button>
-      <button class="menu-btn" id="btn-ubah-email">
-        <span><i data-feather="mail" style="width:16px;height:16px;margin-right:8px"></i> Ubah Email</span>
-        <span>›</span>
-      </button>
-      <button class="menu-btn" id="btn-ubah-password">
-        <span><i data-feather="key" style="width:16px;height:16px;margin-right:8px"></i> Ubah Password</span>
-        <span>›</span>
-      </button>
-    </div>
-    <div class="card danger-zone" style="border:1.5px solid var(--red-light)">
-      <div class="card-head"><h3 style="color:#b91c1c">Zona Bahaya</h3></div>
-      <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px;line-height:1.5">Setelah akun dihapus, kamu tidak bisa login lagi. Transaksi lama tetap tersimpan dengan nama username-mu.</p>
-      <button class="btn btn-danger btn-block" id="btn-hapus-akun">
-        <i data-feather="trash-2" style="width:16px;height:16px"></i> Hapus Akun Saya
-      </button>
-    </div>
-  `;
-
-  refreshIcons();
-
-  document.getElementById('btn-ubah-username')?.addEventListener('click', () => {
-    document.getElementById('new-username').value = state.profile.username || '';
-    document.getElementById('err-username').classList.remove('show');
-    openModalEl('modal-username');
-    refreshIcons();
-  });
-  document.getElementById('btn-ubah-email')?.addEventListener('click', () => {
-    document.getElementById('new-email').value = '';
-    document.getElementById('email-password').value = '';
-    document.getElementById('err-email').classList.remove('show');
-    openModalEl('modal-email');
-    refreshIcons();
-  });
-  document.getElementById('btn-ubah-password')?.addEventListener('click', () => {
-    document.getElementById('old-password').value = '';
-    document.getElementById('new-password').value = '';
-    document.getElementById('confirm-password').value = '';
-    document.getElementById('err-password').classList.remove('show');
-    openModalEl('modal-password');
-    refreshIcons();
-  });
-  document.getElementById('btn-hapus-akun')?.addEventListener('click', async () => {
-    if(state.profile.role === 'owner'){
-      const q = query(collection(db, 'users'), where('workspaceId','==',WORKSPACE_ID));
-      const snap = await getDocs(q);
-      const activeOthers = snap.docs.map(d => ({uid:d.id,...d.data()})).filter(u => u.uid !== state.user.uid && u.role !== 'removed');
-      if(activeOthers.length > 0){
-        toast(`Kamu masih owner dan ada ${activeOthers.length} member aktif. Keluarkan member dulu di menu Anggota sebelum hapus akun.`, 'error', 'Tidak Bisa Hapus');
-        return;
-      }
-    }
-    document.getElementById('confirm-delete-text').value = '';
-    document.getElementById('delete-password').value = '';
-    document.getElementById('err-hapus').classList.remove('show');
-    openModalEl('modal-hapus');
-    refreshIcons();
-  });
-}
-
-// =========================================================
-// MODAL: UBAH USERNAME
-// =========================================================
-document.getElementById('btn-save-username').addEventListener('click', async () => {
-  const newUname = document.getElementById('new-username').value.trim().toLowerCase();
-  const errEl = document.getElementById('err-username');
-  errEl.classList.remove('show');
-  if(!newUname){ errEl.textContent='Username wajib diisi.'; errEl.classList.add('show'); return; }
-  if(!/^[a-z0-9_]{3,20}$/.test(newUname)){ errEl.textContent='Username 3-20 karakter, huruf kecil/angka/underscore.'; errEl.classList.add('show'); return; }
-  if(newUname === state.profile.username){ errEl.textContent='Username sama dengan yang sekarang.'; errEl.classList.add('show'); return; }
-  const oldUname = state.profile.username;
-  const btn = document.getElementById('btn-save-username');
-  btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Menyimpan...';
-  try{
-    const snap = await getDoc(doc(db, 'usernames', newUname));
-    if(snap.exists()) throw new Error('Username sudah dipakai. Pilih yang lain.');
-    await updateDoc(doc(db, 'users', state.user.uid), { username: newUname });
-    await setDoc(doc(db, 'usernames', newUname), { email: state.profile.email, uid: state.user.uid });
-    if(oldUname) await deleteDoc(doc(db, 'usernames', oldUname));
-    state.profile.username = newUname;
-    renderProfil();
-    closeModalEl('modal-username');
-    toast('Username berhasil diubah menjadi "' + newUname + '".', 'success');
-  }catch(e){ errEl.textContent = e.message; errEl.classList.add('show'); }
-  finally{ btn.disabled = false; btn.textContent = orig; }
-});
-
-// =========================================================
-// MODAL: UBAH EMAIL
-// =========================================================
-document.getElementById('btn-save-email').addEventListener('click', async () => {
-  const newEmail = document.getElementById('new-email').value.trim();
-  const password = document.getElementById('email-password').value;
-  const errEl = document.getElementById('err-email');
-  errEl.classList.remove('show');
-  if(!newEmail){ errEl.textContent='Email baru wajib diisi.'; errEl.classList.add('show'); return; }
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)){ errEl.textContent='Format email tidak valid.'; errEl.classList.add('show'); return; }
-  if(!password){ errEl.textContent='Password wajib diisi untuk verifikasi.'; errEl.classList.add('show'); return; }
-  const btn = document.getElementById('btn-save-email');
-  btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Memproses...';
-  try{
-    const cred = EmailAuthProvider.credential(state.profile.email, password);
-    await reauthenticateWithCredential(state.user, cred);
-    await verifyBeforeUpdateEmail(state.user, newEmail);
-    await updateDoc(doc(db, 'users', state.user.uid), { email: newEmail, emailVerified: false });
-    state.profile.email = newEmail;
-    renderProfil();
-    closeModalEl('modal-email');
-    toast('Link verifikasi dikirim ke email baru. Cek inbox & klik link untuk konfirmasi.', 'success', 'Email Terkirim');
-  }catch(e){
-    let msg = e.message;
-    if(e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') msg = 'Password salah.';
-    else if(e.code === 'auth/email-already-in-use') msg = 'Email sudah digunakan akun lain.';
-    else if(e.code === 'auth/invalid-email') msg = 'Format email tidak valid.';
-    errEl.textContent = msg; errEl.classList.add('show');
-  }finally{ btn.disabled = false; btn.textContent = orig; }
-});
-
-// =========================================================
-// MODAL: UBAH PASSWORD
-// =========================================================
-document.getElementById('btn-save-password').addEventListener('click', async () => {
-  const oldPass = document.getElementById('old-password').value;
-  const newPass = document.getElementById('new-password').value;
-  const confPass = document.getElementById('confirm-password').value;
-  const errEl = document.getElementById('err-password');
-  errEl.classList.remove('show');
-  if(!oldPass){ errEl.textContent='Password lama wajib diisi.'; errEl.classList.add('show'); return; }
-  if(!newPass || newPass.length < 6){ errEl.textContent='Password baru minimal 6 karakter.'; errEl.classList.add('show'); return; }
-  if(newPass !== confPass){ errEl.textContent='Konfirmasi password tidak cocok.'; errEl.classList.add('show'); return; }
-  if(newPass === oldPass){ errEl.textContent='Password baru harus berbeda dari yang lama.'; errEl.classList.add('show'); return; }
-  const btn = document.getElementById('btn-save-password');
-  btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Menyimpan...';
-  try{
-    const cred = EmailAuthProvider.credential(state.profile.email, oldPass);
-    await reauthenticateWithCredential(state.user, cred);
-    await updatePassword(state.user, newPass);
-    closeModalEl('modal-password');
-    toast('Password berhasil diubah.', 'success');
-  }catch(e){
-    let msg = e.message;
-    if(e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') msg = 'Password lama salah.';
-    else if(e.code === 'auth/weak-password') msg = 'Password terlalu lemah.';
-    errEl.textContent = msg; errEl.classList.add('show');
-  }finally{ btn.disabled = false; btn.textContent = orig; }
-});
-
-// =========================================================
-// MODAL: HAPUS AKUN
-// =========================================================
-document.getElementById('btn-confirm-hapus').addEventListener('click', async () => {
-  const confirmText = document.getElementById('confirm-delete-text').value.trim().toUpperCase();
-  const password = document.getElementById('delete-password').value;
-  const errEl = document.getElementById('err-hapus');
-  errEl.classList.remove('show');
-  if(confirmText !== 'HAPUS'){ errEl.textContent='Ketik "HAPUS" untuk konfirmasi.'; errEl.classList.add('show'); return; }
-  if(!password){ errEl.textContent='Password wajib diisi.'; errEl.classList.add('show'); return; }
-  const btn = document.getElementById('btn-confirm-hapus');
-  btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Menghapus...';
-  try{
-    const cred = EmailAuthProvider.credential(state.profile.email, password);
-    await reauthenticateWithCredential(state.user, cred);
-    try{ await deleteDoc(doc(db, 'usernames', state.profile.username)); }catch(e){ console.warn(e); }
-    await deleteDoc(doc(db, 'users', state.user.uid));
-    if(state.profile.role === 'owner'){
-      try{ await deleteDoc(doc(db, 'workspaces', WORKSPACE_ID)); }catch(e){ console.warn(e); }
-    } else {
-      const newMembers = (state.workspace.members || []).filter(m => m !== state.user.uid);
-      await updateDoc(doc(db, 'workspaces', WORKSPACE_ID), { members: newMembers });
-    }
-    await deleteUser(state.user);
-    toast('Akun berhasil dihapus. Selamat tinggal!', 'success');
-  }catch(e){
-    let msg = e.message;
-    if(e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') msg = 'Password salah.';
-    errEl.textContent = msg; errEl.classList.add('show');
-    btn.disabled = false; btn.textContent = orig;
-  }
-});
-
-// =========================================================
-// MODAL ENTRY
-// =========================================================
 const modal = document.getElementById('modal-entry');
 const modalState = { tab:'expense', kategori:null, expr:'0' };
 
@@ -1217,9 +802,6 @@ document.getElementById('modal-close').addEventListener('click',closeModal);
 modal.addEventListener('click',e=>{ if(e.target===modal) closeModal(); });
 document.getElementById('link-atur-kategori').addEventListener('click',e=>{ e.preventDefault(); closeModal(); goToPage('kategori'); });
 
-// =========================================================
-// FORM PEMASUKAN / PENGELUARAN
-// =========================================================
 document.getElementById('formPemasukan').addEventListener('submit',async e=>{
   e.preventDefault(); const form=e.target; clearErrs(form);
   const tanggal=document.getElementById('inTanggal').value.trim();
@@ -1267,9 +849,6 @@ document.getElementById('formPengeluaran').addEventListener('submit',async e=>{
   }catch(err){ toast('Gagal: '+err.message,'error'); }
 });
 
-// =========================================================
-// HAPUS TRANSAKSI
-// =========================================================
 document.addEventListener('click',async e=>{
   const btn=e.target.closest('button[data-del]'); if(!btn) return;
   const tipe=btn.dataset.del; const id=btn.dataset.id;
@@ -1278,14 +857,10 @@ document.addEventListener('click',async e=>{
     await delCol(tipe,id);
     state[tipe]=state[tipe].filter(r=>r.id!==id);
     renderAll();
-    renderPreview();
     toast('Data berhasil dihapus.','success');
   }catch(err){ toast('Gagal menghapus: '+err.message,'error'); }
 });
 
-// =========================================================
-// KATEGORI
-// =========================================================
 function tambahKat(inputId,key){
   const inp=document.getElementById(inputId); const nama=inp.value.trim();
   if(!nama){ toast('Nama kategori tidak boleh kosong.','error'); return; }
@@ -1313,161 +888,9 @@ document.addEventListener('click',e=>{
   toast('Kategori dihapus.','success');
 });
 
-// =========================================================
-// LAPORAN & PREVIEW
-// =========================================================
-function getFilteredRows(){
-  const jenis=document.getElementById('expJenis').value;
-  const dari=document.getElementById('expDari').value;
-  const sampai=document.getElementById('expSampai').value;
-  const inRange=t=>(!dari||t>=dari)&&(!sampai||t<=sampai);
-  const rows=[];
-  if(jenis==='semua'||jenis==='pemasukan'){
-    state.pemasukan.filter(r=>inRange(r.tanggal)).forEach(r=>{
-      rows.push({_tipe:'Pemasukan',Tanggal:r.tanggal,Kegunaan:r.kegunaan||'',Kategori:r.kategori||'',Jumlah:Number(r.jumlah)||0,Deskripsi:r.deskripsi||''});
-    });
-  }
-  if(jenis==='semua'||jenis==='pengeluaran'){
-    state.pengeluaran.filter(r=>inRange(r.tanggal)).forEach(r=>{
-      rows.push({_tipe:'Pengeluaran',Tanggal:r.tanggal,Kegunaan:r.sumber||'',Kategori:r.kategori||'',Jumlah:Number(r.jumlah)||0,Deskripsi:r.deskripsi||''});
-    });
-  }
-  return rows.sort((a,b)=>(a.Tanggal||'').localeCompare(b.Tanggal||''));
-}
-
-function renderPreview(){
-  // Pastikan section ada
-  ensurePageSection('laporan');
-  const page = document.getElementById('page-laporan');
-  if(!page) return;
-
-  // Kalau section kosong (belum ada filter), bangun dulu
-  if(!document.getElementById('tablePreview')){
-    page.innerHTML = `
-      <div class="card">
-        <div class="card-head"><h3>Filter Laporan</h3></div>
-        <div class="field"><label>Jenis Transaksi</label><select id="expJenis"><option value="semua">Semua Transaksi</option><option value="pemasukan">Pemasukan saja</option><option value="pengeluaran">Pengeluaran saja</option></select></div>
-        <div class="field"><label>Dari Tanggal</label><input type="date" id="expDari"></div>
-        <div class="field"><label>Sampai Tanggal</label><input type="date" id="expSampai"></div>
-        <div class="form-actions" style="flex-direction:column">
-          <button class="btn btn-ghost btn-block" id="btnPreview"><i data-feather="search" style="width:16px;height:16px"></i> Tampilkan Preview</button>
-          <button class="btn btn-primary btn-block" id="btnExport"><i data-feather="download" style="width:16px;height:16px"></i> Export ke Excel</button>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-head"><h3>Preview <span class="badge" id="countPreview">0</span></h3></div>
-        <div id="tablePreview"></div>
-      </div>
-    `;
-    refreshIcons();
-    document.getElementById('btnPreview').addEventListener('click', renderPreview);
-    document.getElementById('btnExport').addEventListener('click', doExportExcel);
-  }
-
-  const box = document.getElementById('tablePreview');
-
-  if(!state.profile){
-    box.innerHTML = `<div class="empty"><i data-feather="alert-circle" style="width:40px;height:40px;opacity:.5"></i><br><strong>Gagal memuat data</strong><br><span style="font-size:12px;color:var(--text-muted)">Koneksi bermasalah. Coba muat ulang.</span><br><br><button class="btn btn-primary btn-sm" onclick="location.reload()">Coba Lagi</button></div>`;
-    refreshIcons();
-    return;
-  }
-
-  const rows = getFilteredRows();
-  const countEl = document.getElementById('countPreview');
-  if(countEl) countEl.textContent = rows.length;
-
-  if(!rows.length){
-    box.innerHTML = `<div class="empty"><i data-feather="file-text" style="width:40px;height:40px;opacity:.4"></i><br>Tidak ada data pada filter ini.</div>`;
-    refreshIcons();
-    return;
-  }
-
-  const total = rows.reduce((s,r)=>s+r.Jumlah,0);
-  box.innerHTML = `<div class="table-wrap"><table>
-    <thead><tr><th>Tanggal</th><th>Jenis</th><th>Keterangan</th><th>Kategori</th><th style="text-align:right">Jumlah</th></tr></thead>
-    <tbody>
-      ${rows.map(r=>`<tr>
-        <td style="white-space:nowrap">${fmtTanggal(r.Tanggal)}</td>
-        <td>${r._tipe==='Pemasukan'?'<span class="badge">Masuk</span>':'<span class="badge" style="background:var(--red-light);color:var(--red-dark)">Keluar</span>'}</td>
-        <td>${esc(r.Kegunaan)}</td>
-        <td>${esc(r.Kategori)}</td>
-        <td class="num ${r._tipe==='Pemasukan'?'in':'out'}">${fmtRp(r.Jumlah)}</td>
-      </tr>`).join('')}
-      <tr style="background:var(--surface);font-weight:700">
-        <td colspan="4" style="text-align:right">TOTAL</td>
-        <td class="num">${fmtRp(total)}</td>
-      </tr>
-    </tbody>
-  </table></div>`;
-}
-
-// Fungsi export terpisah biar bisa dipanggil dari mana saja
-function doExportExcel(){
-  if(!state.profile){ toast('Data belum siap. Coba muat ulang.', 'error'); return; }
-  const rows = getFilteredRows();
-  if(!rows.length){ toast('Tidak ada data untuk diexport.','error'); return; }
-  try{
-    const aoa=[['Tanggal','Kegunaan','Kategori','Jumlah','Deskripsi']];
-    rows.forEach(r=>aoa.push([r.Tanggal,r.Kegunaan,r.Kategori,r.Jumlah,r.Deskripsi]));
-    const ws=XLSX.utils.aoa_to_sheet(aoa);
-    ws['!cols']=[{wch:13},{wch:28},{wch:20},{wch:16},{wch:36}];
-    const wb=XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb,ws,'Laporan');
-    XLSX.writeFile(wb,`Laporan_Keuangan_${todayISO()}.xlsx`);
-    toast(`Berhasil export ${rows.length} baris.`,'success');
-  }catch(e){ toast('Gagal export: '+e.message,'error'); }
-}
-
-  const rows = getFilteredRows();
-  const countEl = document.getElementById('countPreview');
-  if(countEl) countEl.textContent = rows.length;
-
-  if(!rows.length){
-    box.innerHTML = `<div class="empty"><i data-feather="file-text" style="width:40px;height:40px;opacity:.4"></i><br>Tidak ada data pada filter ini.</div>`;
-    refreshIcons();
-    return;
-  }
-  const total = rows.reduce((s,r)=>s+r.Jumlah,0);
-  box.innerHTML = `<div class="table-wrap"><table>
-    <thead><tr><th>Tanggal</th><th>Jenis</th><th>Keterangan</th><th>Kategori</th><th style="text-align:right">Jumlah</th></tr></thead>
-    <tbody>
-      ${rows.map(r=>`<tr>
-        <td style="white-space:nowrap">${fmtTanggal(r.Tanggal)}</td>
-        <td>${r._tipe==='Pemasukan'?'<span class="badge">Masuk</span>':'<span class="badge" style="background:var(--red-light);color:var(--red-dark)">Keluar</span>'}</td>
-        <td>${esc(r.Kegunaan)}</td>
-        <td>${esc(r.Kategori)}</td>
-        <td class="num ${r._tipe==='Pemasukan'?'in':'out'}">${fmtRp(r.Jumlah)}</td>
-      </tr>`).join('')}
-      <tr style="background:var(--surface);font-weight:700">
-        <td colspan="4" style="text-align:right">TOTAL</td>
-        <td class="num">${fmtRp(total)}</td>
-      </tr>
-    </tbody>
-  </table></div>`;
-}
-
-// =========================================================
-// INIT DATES
-// =========================================================
 document.getElementById('inTanggal').value=todayISO();
 document.getElementById('outTanggal').value=todayISO();
 document.getElementById('entry-tanggal').value=todayISO();
 
-// =========================================================
-// SERVICE WORKER
-// =========================================================
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js')
-      .then(reg => console.log('[PWA] Service Worker terdaftar:', reg.scope))
-      .catch(err => console.warn('[PWA] Gagal daftar Service Worker:', err));
-  });
-}
-
-// =========================================================
-// INIT THEME & ICONS
-// =========================================================
 initTheme();
 refreshIcons();
-
-// Force rebuild 2026-10-02
