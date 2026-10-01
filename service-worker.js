@@ -1,7 +1,7 @@
 // =========================================================
 // SERVICE WORKER - KeuanganKu PWA
 // =========================================================
-const CACHE_NAME = 'keuanganku-v3.1.4';
+const CACHE_NAME = 'keuanganku-v3.1.5';
 
 // File yang di-cache saat pertama kali install
 const PRECACHE_URLS = [
@@ -9,6 +9,7 @@ const PRECACHE_URLS = [
   '/index.html',
   '/style.css',
   '/app.js',
+  '/budgeting.js',
   '/foto1.png',
   '/foto2.jpg',
   '/manifest.json'
